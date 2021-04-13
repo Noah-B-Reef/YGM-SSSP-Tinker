@@ -4,8 +4,12 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
+<<<<<<< HEAD
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/utility.hpp>
+=======
+#include <cereal/archives/json.hpp>
+>>>>>>> 0286d08 (Switches to JSON serialization instead of binary for easier opening outside of YGM)
 #include <fstream>
 #include <map>
 #include <ygm/comm.hpp>
@@ -164,7 +168,7 @@ public:
     m_comm.barrier();
     std::string rank_fname = fname + std::to_string(m_comm.rank());
     std::ofstream os(rank_fname, std::ios::binary);
-    cereal::PortableBinaryOutputArchive oarchive(os);
+    cereal::JSONOutputArchive oarchive(os);
     oarchive(m_local_map, m_default_value, m_comm.size());
   }
 
@@ -174,7 +178,7 @@ public:
     std::string rank_fname = fname + std::to_string(m_comm.rank());
     std::ifstream is(rank_fname, std::ios::binary);
 
-    cereal::PortableBinaryInputArchive iarchive(is);
+    cereal::JSONInputArchive iarchive(is);
     int comm_size;
     iarchive(m_local_map, m_default_value, comm_size);
 
