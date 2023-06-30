@@ -1,20 +1,38 @@
 //
 // Created by mfpate on 6/28/23.
 //
+#define _GLIBCXX_USE_CXX11_ABI 0
 #include <ygm/comm.hpp>
 #include <ygm/container/bag.hpp>
 #include "ygm/container/experimental/maptrix.hpp"
 #include <tuple>
 #include <cmath>
 #include <limits>
+//#include "getGraph.h"
+
+// here are the includes for the getGraph function
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <ygm/comm.hpp>
+#include <ygm/detail/comm_impl.hpp>
+#include <ygm/container/bag.hpp>
+#include <istream>
+#include <limits>
+#include <tuple>
+#include <vector>
+#include <string>
+#include <ygm/container/map.hpp>
+using namespace std;
 
 
 
-std::vector<std::tuple<int, float>> find_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta);
-std::vector<std::tuple<int, float>> find_heavy_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta);
+std::vector<std::tuple<int, float>> find_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta, ygm::container::map<int, std::vector<std::tuple<int, float>>>& mat);
+std::vector<std::tuple<int, float>> find_heavy_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta, ygm::container::map<int, std::vector<std::tuple<int, float>>>& mat);
 void relax_requests(ygm::comm &world, std::vector<std::tuple<int, float>>& requests, ygm::container::map<int, std::tuple<float, bool>>& tents, float upper_bound);
 void relax(std::tuple<int, float>& request, ygm::container::map<int, std::tuple<float, bool>>& tents, float upper_bound);
-
+void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<int,float>>> &mat, ygm::container::map<int, std::tuple<float, bool>> &tentMat);
 
 
 int main(int argc, char **argv) {
@@ -23,88 +41,100 @@ int main(int argc, char **argv) {
 
     // create the (v, tent(v), active_flag -------------------------------------------------------------
     ygm::container::map<int, std::tuple<float, bool>> tents(world);
-    if (world.rank() == 0) {
-        tents.async_insert(0, std::make_tuple(INF, true));
-        // b1
-        tents.async_insert(1, std::make_tuple(INF, true));
-        // c2
-        tents.async_insert(2, std::make_tuple(INF, true));
-        // d3
-        tents.async_insert(3, std::make_tuple(INF, true));
-        // e4
-        tents.async_insert(4, std::make_tuple(INF, true));
-        // f5
-        tents.async_insert(5,std::make_tuple(INF, true));
-        // g6
-        tents.async_insert(6, std::make_tuple(INF, true));
-        // h7
-        tents.async_insert(7, std::make_tuple(INF, true));
-        // i8
-        tents.async_insert(8, std::make_tuple(INF, true));
-        // j9
-        tents.async_insert(9, std::make_tuple(INF, true));
-        // k10
-        tents.async_insert(10, std::make_tuple(INF, true));
-        // l11
-        tents.async_insert(11, std::make_tuple(INF, true));
-        // m12
-        tents.async_insert(12, std::make_tuple(INF, true));
+    ygm::container::map<int, std::vector<std::tuple<int, float>>> mat(world);
 
-    }
-    if (world.rank() == 1) {
+    /*if (world.rank() == 0) {
+    tents.async_insert(0, std::make_tuple(INF, true));
+    // b1
+    tents.async_insert(1, std::make_tuple(INF, true));
+    // c2
+    tents.async_insert(2, std::make_tuple(INF, true));
+    // d3
+    tents.async_insert(3, std::make_tuple(INF, true));
+    // e4
+    tents.async_insert(4, std::make_tuple(INF, true));
+    // f5
+    tents.async_insert(5,std::make_tuple(INF, true));
+    // g6
+    tents.async_insert(6, std::make_tuple(INF, true));
+    // h7
+    tents.async_insert(7, std::make_tuple(INF, true));
+    // i8
+    tents.async_insert(8, std::make_tuple(INF, true));
+    // j9
+    tents.async_insert(9, std::make_tuple(INF, true));
+    // k10
+    tents.async_insert(10, std::make_tuple(INF, true));
+    // l11
+    tents.async_insert(11, std::make_tuple(INF, true));
+    // m12
+    tents.async_insert(12, std::make_tuple(INF, true));
+
+}
+if (world.rank() == 1) {
 // n13
-        tents.async_insert(13, std::make_tuple(INF, true));
-        // o14
-        tents.async_insert(14, std::make_tuple(INF, true));
-        // p15
-        tents.async_insert(15, std::make_tuple(INF, true));
-        // q16
-        tents.async_insert(16, std::make_tuple(INF, true));
-        // r17
-        tents.async_insert(17, std::make_tuple(INF, true));
-        // s18
-        tents.async_insert(18, std::make_tuple(INF, true));
-        // t19
-        tents.async_insert(19, std::make_tuple(INF, true));
-        // u20
-        tents.async_insert(20, std::make_tuple(INF, true));
-        // v21
-        tents.async_insert(21, std::make_tuple(INF, true));
-        // w22
-        tents.async_insert(22, std::make_tuple(INF, true));
-        // x23
-        tents.async_insert(23, std::make_tuple(INF, true));
-        // y24
-        tents.async_insert(24, std::make_tuple(INF, true));
+    tents.async_insert(13, std::make_tuple(INF, true));
+    // o14
+    tents.async_insert(14, std::make_tuple(INF, true));
+    // p15
+    tents.async_insert(15, std::make_tuple(INF, true));
+    // q16
+    tents.async_insert(16, std::make_tuple(INF, true));
+    // r17
+    tents.async_insert(17, std::make_tuple(INF, true));
+    // s18
+    tents.async_insert(18, std::make_tuple(INF, true));
+    // t19
+    tents.async_insert(19, std::make_tuple(INF, true));
+    // u20
+    tents.async_insert(20, std::make_tuple(INF, true));
+    // v21
+    tents.async_insert(21, std::make_tuple(INF, true));
+    // w22
+    tents.async_insert(22, std::make_tuple(INF, true));
+    // x23
+    tents.async_insert(23, std::make_tuple(INF, true));
+    // y24
+    tents.async_insert(24, std::make_tuple(INF, true));
 
-    }
-    if (world.rank() == 0) {
-        // z25
-        tents.async_insert(25, std::make_tuple(INF, true));
-        // aa26
-        tents.async_insert(26, std::make_tuple(INF, true));
-        // ab27
-        tents.async_insert(27, std::make_tuple(INF, true));
-        // ac28
-        tents.async_insert(28, std::make_tuple(INF, true));
-        // ad29
-        tents.async_insert(29, std::make_tuple(INF, true));
-        // ae30
-        tents.async_insert(30, std::make_tuple(INF, true));
-        // af31
-        tents.async_insert(31, std::make_tuple(INF, true));
-        // ag32
-        tents.async_insert(32, std::make_tuple(INF, true));
-        // ah33
-        tents.async_insert(33, std::make_tuple(INF, true));
-        // ai34
-        tents.async_insert(34, std::make_tuple(INF, true));
-        // aj35
-        tents.async_insert(35, std::make_tuple(INF, true));
-        // ak36
-        tents.async_insert(36, std::make_tuple(INF, true));
-    }
+}
+if (world.rank() == 0) {
+    // z25
+    tents.async_insert(25, std::make_tuple(INF, true));
+    // aa26
+    tents.async_insert(26, std::make_tuple(INF, true));
+    // ab27
+    tents.async_insert(27, std::make_tuple(INF, true));
+    // ac28
+    tents.async_insert(28, std::make_tuple(INF, true));
+    // ad29
+    tents.async_insert(29, std::make_tuple(INF, true));
+    // ae30
+    tents.async_insert(30, std::make_tuple(INF, true));
+    // af31
+    tents.async_insert(31, std::make_tuple(INF, true));
+    // ag32
+    tents.async_insert(32, std::make_tuple(INF, true));
+    // ah33
+    tents.async_insert(33, std::make_tuple(INF, true));
+    // ai34
+    tents.async_insert(34, std::make_tuple(INF, true));
+    // aj35
+    tents.async_insert(35, std::make_tuple(INF, true));
+    // ak36
+    tents.async_insert(36, std::make_tuple(INF, true));
+}*/
+
+    getGraph(world, mat, tents);
+    cout << "the graph worked" << endl;
     world.barrier();
+
+    /*// print out all the v tent(v) pairs
+    mat.for_all([](int node, auto &value) {
+        std::cout << node << " " << std::get<0>(value[0]) << std::endl;
+    });*/
+
+
 
     // relax the source node -------------------------------------------------------------------------
     float upper_bound = 1;
@@ -154,7 +184,7 @@ int main(int argc, char **argv) {
         world.barrier();
 
         // find requests ---------------------------------------------------------------------------------
-        requests = find_requests(world, current_pairs, delta);
+        requests = find_requests(world, current_pairs, delta, mat);
         world.barrier();
 
         do {
@@ -177,7 +207,7 @@ int main(int argc, char **argv) {
 
             // find requests ---------------------------------------------------------------------------------
             requests.clear();
-            requests = find_requests(world, additional_pairs, delta);
+            requests = find_requests(world, additional_pairs, delta, mat);
             world.barrier();
 
             // add the new pairs to the current bucket (for heavy relaxations) --------------------------------
@@ -190,7 +220,7 @@ int main(int argc, char **argv) {
         // thoughts: need to recheck for the potential pairs in the current bucket (don't clear)
         // re-find requests -> check for light edges again, where
         // now do heavy
-        requests = find_heavy_requests(world, current_pairs, delta);
+        requests = find_heavy_requests(world, current_pairs, delta, mat);
         world.barrier();
 
         // relax requests --------------------------------------------------------------------------------
@@ -219,12 +249,68 @@ int main(int argc, char **argv) {
 
 }
 
+// load in graph from data.csv
+void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<int,float>>> &mat, ygm::container::map<int, std::tuple<float, bool>> &tentMat) {
+    float Inf = std::numeric_limits<float>::infinity();
+
+    // file pointer
+    ifstream fin;
+
+    // open data.csv
+    fin.open("/home/molliep/ygm/examples/test_graph.csv");
+
+    std::vector <string> row;
+    std::vector <std::tuple<int, float>> adj;
+    string line, word, temp;
+
+    // keep track of current node's adjacency list
+    int curr_node = 0;
+
+    // skip first line
+    getline(fin, line);
+
+    while (getline(fin, line)) {
+        // breaking words
+        std::stringstream s(line);
+
+        // read column data
+        while(std::getline(s, word,char(','))) {
+        row.push_back(word);
+        }
+
+        // load adjency row into matrix
+        if (std::stoi(row[0]) != curr_node) {
+            if (world.rank() == curr_node % world.size()) {
+                tentMat.async_insert(curr_node, std::make_tuple(Inf, true));
+                mat.async_insert(curr_node, adj);
+            }
+            adj.clear();
+            curr_node++;
+        }
+            adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
+            row.clear();
+    }
+
+    if (world.rank() == curr_node % world.size()) {
+        tentMat.async_insert(curr_node, std::make_tuple(Inf, true));
+    }
+
+    world.barrier();
+    fin.close();
+}
+
+
+
+
+
+
 void relax(std::tuple<int, float>& request, ygm::container::map<int, std::tuple<float, bool>>& tents, float upper_bound) {
     bool repeat = false;
     auto update_tent = [](auto node, auto &value, std::tuple<int, float> request, float upper_bound) {
         // if the proposed tent from request is less than the current tent
         if (std::get<1>(request) < std::get<0>(value)) {
             std::get<0>(value) = std::get<1>(request);
+            std::cout << "tent(" << node << ") = " << std::get<0>(value) << std::endl;
             // if the node re-enters the same bucket, the new tent(v) < upper bound
             if (std::get<0>(value) < upper_bound) {
                 std::get<1>(value) = true;
@@ -241,9 +327,9 @@ void relax_requests(ygm::comm &world, std::vector<std::tuple<int, float>>& reque
     world.barrier();
 }
 
-std::vector<std::tuple<int, float>> find_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta) {
+std::vector<std::tuple<int, float>> find_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta, ygm::container::map<int, std::vector<std::tuple<int, float>>>& mat) {
 // here is the matrix
-    ygm::container::map<int, std::vector<std::tuple<int, float>>> mat(world);
+    /*ygm::container::map<int, std::vector<std::tuple<int, float>>> mat(world);
     std::vector<std::tuple<int, float>> adj_list;
 
     if (world.rank() == 0) {
@@ -400,7 +486,7 @@ std::vector<std::tuple<int, float>> find_requests(ygm::comm &world, std::vector<
     }
 
     world.barrier();
-
+*/
     // assume that you are doing heavy requests until a light request is found
     bool is_light = false;
     std::vector<std::tuple<int, float>> requests;
@@ -432,9 +518,9 @@ std::vector<std::tuple<int, float>> find_requests(ygm::comm &world, std::vector<
     return requests;
 }
 
-std::vector<std::tuple<int, float>> find_heavy_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta) {
+std::vector<std::tuple<int, float>> find_heavy_requests(ygm::comm &world, std::vector<std::tuple<int, float, bool>> tent_pairs, int delta, ygm::container::map<int, std::vector<std::tuple<int, float>>>& mat) {
 // here is the matrix
-    ygm::container::map<int, std::vector<std::tuple<int, float>>> mat(world);
+  /*  ygm::container::map<int, std::vector<std::tuple<int, float>>> mat(world);
     std::vector<std::tuple<int, float>> adj_list;
 
     if (world.rank() == 0) {
@@ -591,7 +677,7 @@ std::vector<std::tuple<int, float>> find_heavy_requests(ygm::comm &world, std::v
     }
 
     world.barrier();
-
+*/
     // assume that you are doing heavy requests until a light request is found
     bool is_light = false;
     std::vector<std::tuple<int, float>> requests;
