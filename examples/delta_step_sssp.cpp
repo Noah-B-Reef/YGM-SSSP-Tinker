@@ -35,6 +35,12 @@ void relax(std::tuple<int, float>& request, ygm::container::map<int, std::tuple<
 void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<int,float>>> &mat, ygm::container::map<int, std::tuple<float, bool>> &tentMat);
 
 
+struct adjList
+{
+    std::vector<std::tuple<int, float>> cost;
+    float tent;
+};
+
 int main(int argc, char **argv) {
     ygm::comm world(&argc, &argv);
     const float INF = std::numeric_limits<float>::infinity();
@@ -250,14 +256,14 @@ if (world.rank() == 0) {
 }
 
 // load in graph from data.csv
-void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<int,float>>> &mat, ygm::container::map<int, std::tuple<float, bool>> &tentMat) {
+void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<int,float>>> &mat) {
     float Inf = std::numeric_limits<float>::infinity();
 
     // file pointer
     ifstream fin;
 
     // open data.csv
-    fin.open("/home/molliep/ygm/examples/test_graph.csv");
+    fin.open("/home/noahr/YGM_SSSP_Tinker/examples/data.csv");
 
     std::vector <string> row;
     std::vector <std::tuple<int, float>> adj;
@@ -275,20 +281,21 @@ void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<i
 
         // read column data
         while(std::getline(s, word,char(','))) {
-        row.push_back(word);
+            row.push_back(word);
         }
 
         // load adjency row into matrix
         if (std::stoi(row[0]) != curr_node) {
             if (world.rank() == curr_node % world.size()) {
-                tentMat.async_insert(curr_node, std::make_tuple(Inf, true));
-                mat.async_insert(curr_node, adj);
+                adjList insert = {Inf, adj};
+                mat.async_insert(curr_node, insert);
             }
             adj.clear();
             curr_node++;
         }
-            adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
-            row.clear();
+        
+        adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
+        row.clear();
     }
 
     if (world.rank() == curr_node % world.size()) {
@@ -310,12 +317,16 @@ void relax(std::tuple<int, float>& request, ygm::container::map<int, std::tuple<
         // if the proposed tent from request is less than the current tent
         if (std::get<1>(request) < std::get<0>(value)) {
             std::get<0>(value) = std::get<1>(request);
-            std::cout << "tent(" << node << ") = " << std::get<0>(value) << std::endl;
+            std::cout << "(" << std::get<0>(request) << "," << std::get<1>(request) << ")" << std::endl;
+
+            //std::cout << "tent(" << node << ") = " << std::get<0>(value) << std::endl;
             // if the node re-enters the same bucket, the new tent(v) < upper bound
             if (std::get<0>(value) < upper_bound) {
                 std::get<1>(value) = true;
             }
+
         }
+        //std::cout << "(" << std::get<0>(request) << "," << std::get<1>(request) << ")" << std::endl;
     };
     tents.async_visit(std::get<0>(request), update_tent, request, upper_bound);
 }
