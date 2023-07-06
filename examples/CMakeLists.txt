@@ -20,6 +20,7 @@ add_ygm_example(my_container_test)
 add_ygm_example(my_matrix_test)
 add_ygm_example(my_map_test)
 add_ygm_example(delta_step_sssp)
+add_ygm_example(sssp)
 
 add_subdirectory(container)
 add_subdirectory(io)
