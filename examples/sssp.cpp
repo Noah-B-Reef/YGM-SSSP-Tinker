@@ -31,13 +31,13 @@ using namespace std;
 // relax(w, v)x
 
 struct adj_list {
-    std::vector<std::tuple<int, float>> cost;
+    std::vector<std::tuple<int, float>> edges;
     float tent;
 
     template<class Archive>
     void serialize(Archive & ar)
     {
-        ar(cost, tent);
+        ar(edges, tent);
     }
 };
 
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
 
         // go to that row in the map and relax requests
         map.async_visit(vertex, [&map](const auto &head, adj_list &head_info) {
-            for (std::tuple<int, float> edge : head_info.cost) {
+            for (std::tuple<int, float> edge : head_info.edges) {
                 float potential_tent = head_info.tent + std::get<1>(edge);
                 relax_requests_lambda(std::get<0>(edge), potential_tent);
             }
@@ -189,7 +189,7 @@ void getGraph(ygm::comm &world, ygm::container::map<int, adj_list> &mat) {
         if (std::stoi(row[0]) != curr_node) {
             if (world.rank() == curr_node % world.size()) {
                 adj_list insert;
-                insert.cost = adj;
+                insert.edges = adj;
                 insert.tent = Inf;
                         //{adj, Inf};
                 mat.async_insert(curr_node, insert);
