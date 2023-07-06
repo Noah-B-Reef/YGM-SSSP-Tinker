@@ -35,8 +35,7 @@ struct adj_list {
     float tent;
 
     template<class Archive>
-    void serialize(Archive & ar)
-    {
+    void serialize(Archive & ar) {
         ar(edges, tent);
     }
 };
@@ -145,7 +144,7 @@ int main(int argc, char **argv) {
         remove_from_bucket_lambda(vertex);
 
         // go to that row in the map and relax requests
-        map.async_visit(vertex, [&map](const auto &head, adj_list &head_info) {
+        map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
             for (std::tuple<int, float> edge : head_info.edges) {
                 float potential_tent = head_info.tent + std::get<1>(edge);
                 relax_requests_lambda(std::get<0>(edge), potential_tent);
