@@ -46,6 +46,10 @@ int main(int argc, char *argv[]) {
     // load in graph
     getGraph(world, mat, max_weight, path);
 
+    mat.async_visit(9,[](auto k, auto v)
+    {
+        std::cout << "(" << k << "," << v.tent << ")" << std::endl;
+    });
 
     // set source node
 
@@ -76,9 +80,9 @@ int main(int argc, char *argv[]) {
 
         mat.for_all([&degree](auto k, auto v)
         {
-            if (v.cost.size() > degree)
+            if (v.edges.size() > degree)
             {
-                degree = v.cost.size()-1;
+                degree = v.edges.size()-1;
             }
         });
 
@@ -111,7 +115,7 @@ int main(int argc, char *argv[]) {
 
         static auto thing = [&mat, &request, &delta](auto k, auto v){
 
-                std::vector<std::tuple<int,float>> row = v.cost;
+                std::vector<std::tuple<int,float>> row = v.edges;
                 float tent = v.tent;
 
                 // iterate through adjacency row

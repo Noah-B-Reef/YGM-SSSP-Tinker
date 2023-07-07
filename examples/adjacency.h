@@ -28,7 +28,6 @@ struct adj_list {
 
 };
 
-
 // load in graph from data.csv
 void getGraph(ygm::comm &world, ygm::container::map<int,adj_list> &mat, float &max_weight, std::string path) {
 
@@ -52,6 +51,8 @@ void getGraph(ygm::comm &world, ygm::container::map<int,adj_list> &mat, float &m
     getline(fin, line);
 
     while (getline(fin, line)) {
+        row.clear();
+
         // breaking words
         std::stringstream s(line);
 
@@ -82,8 +83,12 @@ void getGraph(ygm::comm &world, ygm::container::map<int,adj_list> &mat, float &m
 
 
         adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
-        row.clear();
     }
+
+        if (world.rank() == curr_node % world.size()) {
+            adj_list insert = {adj, Inf};
+            mat.async_insert(curr_node, insert);
+        }
 
     world.barrier();
     fin.close();
