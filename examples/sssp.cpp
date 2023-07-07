@@ -48,9 +48,18 @@ int main(int argc, char* argv[]) {
     std::vector<ygm::container::set<int>*> buckets;
 
     // THIS WILL NEED TO BE CHANGED!!
+    int num_buckets = 0;
+    static float delta = 3;
     float max_cost; // the maximum shortest path weight -> 21 for testing
-    int num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
-    const static float delta = std::atoi(argv[2]); // -> 3 for testing
+    if (argc > 1) {
+        num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
+        static float delta = std::atoi(argv[2]); // -> 3 for testing
+    }
+    else {
+
+        num_buckets = 9; // = ceil(max_cost / delta) + 2; -> 9 for testing
+        static float delta = 3; // -> 3 for testing
+    }
 
 
     // add the sets to the vector -------------------------------------------------------------------------------------
