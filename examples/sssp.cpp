@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
     // THIS WILL NEED TO BE CHANGED!!
     const float max_cost = 11; // the maximum shortest path weight
-    const int delta = 3;
+    const static int delta = 3;
     int num_buckets = ceil(max_cost / delta) + 1;
 
     // add the sets to the vector -------------------------------------------------------------------------------------
@@ -93,35 +93,37 @@ int main(int argc, char **argv) {
     // duplicate the current bucket -----------------------------------------------------------
     ygm::container::set<int> bucket_copy(world);
 
-    auto fill_bucket_copy_lambda = [&bucket_copy](const auto &vertex) {
+    static auto fill_bucket_copy_lambda = [&bucket_copy](const auto &vertex) {
+        // if the vertex is not already in the copy bucket, add it
         bucket_copy.async_insert(vertex);
     };
 
-    buckets[idx]->for_all([&bucket_copy, &fill_bucket_copy_lambda](const int &vertex) {
+    buckets[idx]->for_all([](const int &vertex) {
        fill_bucket_copy_lambda(vertex);
     });
 
 
     // process the current bucket ---------------------------------------------------------------
-    // TODO: complete this
-    static auto add_vertex_to_bucket_lambda = [](auto &vertex) {
-        std::cout << vertex << std::endl;
+    static auto add_vertex_to_bucket_lambda = [&buckets](auto &vertex, auto &idx) {
+        buckets[idx]->async_insert(vertex);
+        std::cout << "vertex " << vertex << " is in bucket " << idx << std::endl;
     };
 
 
     /*
      * For a given node (this is the tail of an edge from a node in the current bucket),
      * update the tent value if the potential is better
-     * TODO: add the updated node to a bucket
      */
     static auto relax_requests_lambda = [&map](auto &vertex, auto &potential_tent) {
         map.async_visit(vertex, [](auto &node, adj_list &node_info, auto &potential_tent) {
             if (potential_tent < node_info.tent) {
                 // update the tentative
                 node_info.tent = potential_tent;
-                // TODO: add the vertex to a bucket to be processed
+                int idx = floor(node_info.tent / delta);
+                add_vertex_to_bucket_lambda(node, idx);
+                std::cout << "vertex = " << node << ", tent = " << node_info.tent << std::endl;
+
             }
-            std::cout << "vertex = " << node << ", tent = " << node_info.tent << std::endl;
         }, potential_tent);
     };
 
@@ -135,22 +137,70 @@ int main(int argc, char **argv) {
 
 
     /*
+     * Remove a given node from the current bucket
+     */
+    auto remove_from_copy_bucket_lambda = [&bucket_copy, &idx](const auto &vertex) {
+        bucket_copy.async_erase(vertex);
+    };
+
+    /*
      * for all vertices in the current bucket:
      * first, remove them from the bucket
      * then, go to that row in the map, walk through its adjacency list and relax all requests
      */
-    buckets[idx]->for_all([&map, &buckets, &idx, &remove_from_bucket_lambda](int vertex) {
-        // remove the current vertex from the current bucket
-        remove_from_bucket_lambda(vertex);
 
-        // go to that row in the map and relax requests
-        map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
-            for (std::tuple<int, float> edge : head_info.edges) {
-                float potential_tent = head_info.tent + std::get<1>(edge);
-                relax_requests_lambda(std::get<0>(edge), potential_tent);
-            }
+    while (idx < 2) {
+        // check to see if there is even anything in the current bucket
+        while (buckets[idx]->size() > 0) {
+            buckets[idx]->for_all([&map, &buckets, &idx, &remove_from_bucket_lambda](int vertex) {
+                // add all vertices in the current bucket to the copy
+                fill_bucket_copy_lambda(vertex);
+
+                // remove the current vertex from the current bucket
+                remove_from_bucket_lambda(vertex);
+
+                // go to that row in the map and relax requests
+                map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
+                    for (std::tuple<int, float> edge : head_info.edges) {
+                        if (std::get<1>(edge) <= delta) {
+                            float potential_tent = head_info.tent + std::get<1>(edge);
+                            relax_requests_lambda(std::get<0>(edge), potential_tent);
+                        }
+                    }
+                });
+            });
+            world.barrier();
+        }
+        std::cout << "bucket " << idx << " light requests relaxed" << std::endl;
+
+        if (bucket_copy.size() > 0) {
+            // do the heavy relaxations (only one round) ---------------------------------------------------------------------
+            bucket_copy.for_all([&map, &buckets, &idx, &remove_from_copy_bucket_lambda](int vertex) {
+                // remove the current vertex from the current bucket copy
+                remove_from_copy_bucket_lambda(vertex);
+
+                // go to that row in the map and relax requests
+                map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
+                    for (std::tuple<int, float> edge : head_info.edges) {
+                        if (std::get<1>(edge) > delta) {
+                            float potential_tent = head_info.tent + std::get<1>(edge);
+                            relax_requests_lambda(std::get<0>(edge), potential_tent);
+                        }
+                    }
+                });
+            });
+        }
+        world.barrier();
+        std::cout << "bucket " << idx << " heavy requests relaxed" << std::endl;
+        // done with this bucket
+        ++idx;
+    }
+
+    for (int i = 0; i < num_buckets; ++i) {
+        buckets[i]->for_all([&i](auto &vertex) {
+            std::cout << vertex << " is in bucket " << i << std::endl;
         });
-    });
+    }
 }
 
 
