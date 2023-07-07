@@ -37,7 +37,7 @@ struct adj_list {
 
 void getGraph(ygm::comm &world, ygm::container::map<int, adj_list> &mat);
 
-int main(int argc, char **argv) {
+int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
 
     // here is the lookup map for vertices and their best tent values/adj list (as a struct)
@@ -48,12 +48,13 @@ int main(int argc, char **argv) {
     std::vector<ygm::container::set<int>*> buckets;
 
     // THIS WILL NEED TO BE CHANGED!!
-    const float max_cost = 21; // the maximum shortest path weight
-    const static int delta = 3;
-    int num_buckets = ceil(max_cost / delta) + 2;
+    float max_cost; // the maximum shortest path weight -> 21 for testing
+    int num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
+    const static float delta = std::atoi(argv[2]); // -> 3 for testing
+
 
     // add the sets to the vector -------------------------------------------------------------------------------------
-    // TODO: update this so that it is not hard coded
+    // TODO: update this so that it is not hard coded... there are issues with this :(
 
     ygm::container::set<int> bucket0(world);
     buckets.push_back(&bucket0);
