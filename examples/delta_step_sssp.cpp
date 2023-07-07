@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
     // create the (v, tent(v), active_flag -------------------------------------------------------------
     ygm::container::map<int, std::tuple<float, bool>> tents(world);
-    ygm::container::map<int, std::vector<std::tuple<int, float>>> mat(world);
+    ygm::container::map<int, adjList> mat(world);
 
     /*if (world.rank() == 0) {
     tents.async_insert(0, std::make_tuple(INF, true));
@@ -131,8 +131,7 @@ if (world.rank() == 0) {
     tents.async_insert(36, std::make_tuple(INF, true));
 }*/
 
-    getGraph(world, mat, tents);
-    cout << "the graph worked" << endl;
+    getGraph(world, mat);
     world.barrier();
 
     /*// print out all the v tent(v) pairs
@@ -140,6 +139,7 @@ if (world.rank() == 0) {
         std::cout << node << " " << std::get<0>(value[0]) << std::endl;
     });*/
 
+    mat.for_all();
 
 
     // relax the source node -------------------------------------------------------------------------
@@ -148,6 +148,10 @@ if (world.rank() == 0) {
     relax(source, tents, upper_bound);
     world.barrier();
 
+    std::vector<ygm::container::set<int>> buckets[4];
+
+
+    // ------------------------------------------------------------
     bool contains_active_nodes = true;
     int x = 0;
     while(contains_active_nodes) {
@@ -256,7 +260,7 @@ if (world.rank() == 0) {
 }
 
 // load in graph from data.csv
-void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<int,float>>> &mat) {
+void getGraph(ygm::comm &world, ygm::container::map<int,adjList> &mat) {
     float Inf = std::numeric_limits<float>::infinity();
 
     // file pointer
@@ -287,7 +291,7 @@ void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<i
         // load adjency row into matrix
         if (std::stoi(row[0]) != curr_node) {
             if (world.rank() == curr_node % world.size()) {
-                adjList insert = {Inf, adj};
+                adjList insert = {adj, Inf};
                 mat.async_insert(curr_node, insert);
             }
             adj.clear();
@@ -296,10 +300,6 @@ void getGraph(ygm::comm &world, ygm::container::map<int,std::vector<std::tuple<i
         
         adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
         row.clear();
-    }
-
-    if (world.rank() == curr_node % world.size()) {
-        tentMat.async_insert(curr_node, std::make_tuple(Inf, true));
     }
 
     world.barrier();
