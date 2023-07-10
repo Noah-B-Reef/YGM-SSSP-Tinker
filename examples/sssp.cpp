@@ -2,40 +2,14 @@
 // Created by mfpate on 7/3/23.
 //
 
-#include <ygm/comm.hpp>
-#include <ygm/container/array.hpp>
-#include <ygm/container/set.hpp>
-#include <ygm/container/map.hpp>
+# define _GLIBCXX_USE_CXX11_ABI 0
 #include <cmath>
-#include <limits>
-#include <tuple>
-
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <ygm/comm.hpp>
-#include <ygm/detail/comm_impl.hpp>
-#include <ygm/container/bag.hpp>
-#include <istream>
-#include <limits>
 #include <tuple>
 #include <vector>
-#include <string>
+#include <ygm/comm.hpp>
+#include <ygm/container/set.hpp>
 #include <ygm/container/map.hpp>
-using namespace std;
-
-struct adj_list {
-    std::vector<std::tuple<int, float>> edges;
-    float tent;
-
-    template<class Archive>
-    void serialize(Archive & ar) {
-        ar(edges, tent);
-    }
-};
-
-void getGraph(ygm::comm &world, ygm::container::map<int, adj_list> &mat);
+#include "adjacency.h"
 
 int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
@@ -83,7 +57,6 @@ int main(int argc, char* argv[]) {
     ygm::container::set<int> bucket5(world);
     buckets.push_back(&bucket5);
 
-
     ygm::container::set<int> bucket6(world);
     buckets.push_back(&bucket6);
 
@@ -92,7 +65,6 @@ int main(int argc, char* argv[]) {
 
     ygm::container::set<int> bucket8(world);
     buckets.push_back(&bucket8);
-
 
     int idx = 0;
     // complete a source relaxation --------------------------------------------------------------------------------------
@@ -188,61 +160,4 @@ int main(int argc, char* argv[]) {
         std::cout << "tent(" << vertex << ") = " << vertex_info.tent << std::endl;
     });
 
-}
-
-
-// HELPER FUNCTIONS ------------------------------------------------------------------------------------------------------
-// load in graph from data.csv
-void getGraph(ygm::comm &world, ygm::container::map<int, adj_list> &mat) {
-    float Inf = std::numeric_limits<float>::infinity();
-
-    // file pointer
-    ifstream fin;
-
-    // open data.csv
-    fin.open("/home/molliep/ygm/examples/data.csv");
-
-    std::vector <string> row;
-    std::vector<std::tuple<int, float>> adj;
-    string line, word, temp;
-
-    // keep track of current node's adjacency list
-    int curr_node = 0;
-
-    // skip first line
-    getline(fin, line);
-
-    while (getline(fin, line)) {
-        // breaking words
-        std::stringstream s(line);
-
-        // read column data
-        while(std::getline(s, word,char(','))) {
-            row.push_back(word);
-        }
-
-        // load adjacency row into matrix
-        if (std::stoi(row[0]) != curr_node) {
-            if (world.rank() == curr_node % world.size()) {
-                adj_list insert;
-                insert.edges = adj;
-                insert.tent = Inf;
-                        //{adj, Inf};
-                mat.async_insert(curr_node, insert);
-            }
-            adj.clear();
-            curr_node++;
-        }
-
-        adj.push_back(std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
-        row.clear();
-    }
-
-    if (world.rank() == curr_node % world.size()) {
-        adj_list insert = {adj, Inf};
-        mat.async_insert(curr_node, insert);
-    }
-
-    world.barrier();
-    fin.close();
 }
