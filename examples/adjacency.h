@@ -28,8 +28,63 @@ struct adj_list {
 
 };
 
+
+class adj_mat{
+    public:
+        ygm::container::map<int, adj_list> mat;
+        ygm::comm world;
+        
+    // class constructor
+    adj_mat(ygm::comm &comm) : mat(comm), world(comm){};
+
+
+    // gets tenative value of node
+    float get_tent(int node){
+
+        float result;
+
+        static auto get = [&result](auto k, auto v){
+            std::cout << "v = " << v.tent << std::endl;
+            result = v.tent;
+            //std::cout << "result = " << result << " I am rank "  << std::endl; 
+
+        };
+
+        mat.async_visit(node, [](auto k, auto v){
+            get(k,v);
+        });
+
+        world.barrier();
+        std::cout << "result = " << result << " I am rank " << mat.owner(node) << std::endl; 
+        return result;
+    };
+
+    void update_tent(int node, float potential)
+    {
+
+    };
+
+
+    void async_insert(int key, adj_list val)
+    {
+        mat.async_insert(key, val);
+    };
+
+    void async_visit(int key, auto lambda)
+    {
+        mat.async_visit(key, lambda);
+    };
+
+    void for_all(auto lambda)
+    {
+        mat.for_all(lambda);
+    };
+};   
+
+
+
 // load in graph from data.csv
-void getGraph(ygm::comm &world, ygm::container::map<int,adj_list> &mat, float &max_weight, std::string path) {
+void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string path) {
 
     float Inf = std::numeric_limits<float>::infinity();
     int max = 0;
@@ -93,3 +148,4 @@ void getGraph(ygm::comm &world, ygm::container::map<int,adj_list> &mat, float &m
     world.barrier();
     fin.close();
 }
+

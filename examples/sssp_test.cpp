@@ -38,18 +38,13 @@ int main(int argc, char *argv[]) {
 
 
     ygm::comm world(&argc, &argv);
-    ygm::container::map<int, adj_list> mat(world);
+    adj_mat mat(world);
     std::vector<ygm::container::set<int>*> buckets;
     ygm::container::set<int> sset(world);
     buckets.push_back(&sset);
 
     // load in graph
     getGraph(world, mat, max_weight, path);
-
-    mat.async_visit(9,[](auto k, auto v)
-    {
-        std::cout << "(" << k << "," << v.tent << ")" << std::endl;
-    });
 
     // set source node
 
@@ -59,11 +54,9 @@ int main(int argc, char *argv[]) {
             v.tent = 0;
         });
 
-    
-    mat.async_visit(0,[](auto k, auto &v)
-    {
-        std::cout << "(" << k << "," << v.tent << ")" << std::endl;
-    });
+    float tent = mat.get_tent(7);
+    std::cout << "(7, " << tent << ")" << std::endl; 
+
     // get num of buckets
 
     // use user defined num of buckets
@@ -104,6 +97,7 @@ int main(int argc, char *argv[]) {
     int curr_bucket = 0;
     int count = 0;
 
+    /*
     
     // consume the bucket
     while(!isEmpty(buckets) && count < 3)
@@ -186,7 +180,7 @@ int main(int argc, char *argv[]) {
 
         count++;
     }
-    
+    */
 }
 
 // Check if ALL buckets are empty
