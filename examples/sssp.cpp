@@ -28,11 +28,11 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
         static float delta = std::atoi(argv[2]); // -> 3 for testing
-        //std::string path = argv[3];
-	int rmat_scale = std::atoi(argv[3]);
+        std::string path = argv[3];
+	//int rmat_scale = std::atoi(argv[3]);
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-        //getGraph(world, map, max_weight, path);
-        generate_rmat_graph(world, map, rmat_scale);
+        getGraph(world, map, max_weight, path);
+        //generate_rmat_graph(world, map, rmat_scale);
     }
     else {
 
@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
         int degree = 0;
 
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-        //getGraph(world, map, max_weight, path);
-	generate_rmat_graph(world, map, 8);
+        getGraph(world, map, max_weight, path);
+	//generate_rmat_graph(world, map, 8);
 
         map.for_all([&degree](auto k, auto v)
         {
