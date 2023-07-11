@@ -13,16 +13,10 @@
 #include <string>
 #include <ygm/container/map.hpp>
 
-<<<<<<< HEAD
 using namespace std;
 struct adj_list {
 
     std::vector<std::tuple<std::size_t, float>> edges;
-=======
-struct adj_list {
-
-    std::vector<std::tuple<int, float>> edges;
->>>>>>> tinkering
 
     float tent;
 
@@ -35,11 +29,7 @@ struct adj_list {
 
 };
 
-<<<<<<< HEAD
 /*
-=======
-
->>>>>>> tinkering
 class adj_mat{
     public:
         ygm::container::map<int, adj_list> mat;
@@ -92,24 +82,7 @@ class adj_mat{
     };
 };   
 
-<<<<<<< HEAD
 */
-
-// load in graph from data.csv
-void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat) {
-    float Inf = std::numeric_limits<float>::infinity();
-
-    // file pointer
-    ifstream fin;
-
-    // open data.csv
-    fin.open("/home/molliep/ygm/examples/data.csv");
-
-    std::vector <string> row;
-    std::vector<std::tuple<std::size_t, float>> adj;
-    string line, word, temp;
-=======
-
 
 // load in graph from data.csv
 void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string path) {
@@ -126,7 +99,6 @@ void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string pat
     std::vector <std::string> row;
     std::vector <std::tuple<int, float>> adj;
     std::string line, word, temp;
->>>>>>> tinkering
 
     // keep track of current node's adjacency list
     int curr_node = 0;
@@ -135,11 +107,8 @@ void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string pat
     getline(fin, line);
 
     while (getline(fin, line)) {
-<<<<<<< HEAD
-=======
         row.clear();
 
->>>>>>> tinkering
         // breaking words
         std::stringstream s(line);
 
@@ -148,16 +117,6 @@ void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string pat
             row.push_back(word);
         }
 
-<<<<<<< HEAD
-        // load adjacency row into matrix
-        if (std::stoi(row[0]) != curr_node) {
-            if (world.rank() == curr_node % world.size()) {
-                adj_list insert;
-                insert.edges = adj;
-                insert.tent = Inf;
-                mat.async_insert(curr_node, insert);
-            }
-=======
         // load adjency row into matrix
         if (std::stoi(row[0]) != curr_node) {
             if (world.rank() == curr_node % world.size()) {
@@ -174,25 +133,10 @@ void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string pat
             // get largest max across all ranks
             max_weight = world.all_reduce_max(max);
 
->>>>>>> tinkering
             adj.clear();
             curr_node++;
         }
 
-<<<<<<< HEAD
-        adj.push_back(std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
-        row.clear();
-    }
-
-    if (world.rank() == curr_node % world.size()) {
-        adj_list insert = {adj, Inf};
-        mat.async_insert(curr_node, insert);
-    }
-
-    world.barrier();
-    fin.close();
-}
-=======
 
         adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
     }
@@ -206,4 +150,3 @@ void getGraph(ygm::comm &world, adj_mat &mat, float &max_weight, std::string pat
     fin.close();
 }
 
->>>>>>> tinkering
