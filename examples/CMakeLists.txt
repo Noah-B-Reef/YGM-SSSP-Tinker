@@ -21,6 +21,7 @@ add_ygm_example(my_matrix_test)
 add_ygm_example(my_map_test)
 add_ygm_example(sssp)
 add_ygm_example(sssp_test)
+add_ygm_example(rmat_gen_graphs)
 
 add_subdirectory(container)
 add_subdirectory(io)
