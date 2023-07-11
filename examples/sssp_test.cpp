@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
 
     ygm::comm world(&argc, &argv);
-    adj_mat mat(world);
+    ygm::container::map<size_t, adj_list> mat(world);
     std::vector<ygm::container::set<int>*> buckets;
     ygm::container::set<int> sset(world);
     buckets.push_back(&sset);
