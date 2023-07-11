@@ -48,9 +48,9 @@ int main(int argc, char* argv[]) {
             }
         });
 
-        max_degree = world.all_reduce_max(degree);
+        float max_degree = world.all_reduce_max(degree);
 
-        delta = 1.0/max_degree;
+        static float delta = 1.0/max_degree;
         
         num_buckets = (size_t)ceil(max_weight/delta);
     }

@@ -43,11 +43,11 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
     fin.open(path);
 
     std::vector <std::string> row;
-    std::vector <std::tuple<size_t, float>> adj;
+    std::vector <std::tuple<std::size_t, float>> adj;
     std::string line, word, temp;
 
     // keep track of current node's adjacency list
-    int curr_node = 0;
+    std::size_t curr_node = 0;
 
     // skip first line
     getline(fin, line);

@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
 
     ygm::comm world(&argc, &argv);
-    ygm::container::map<size_t, adj_list> mat(world);
+    ygm::container::map<std::size_t, adj_list> mat(world);
     std::vector<ygm::container::set<int>*> buckets;
     ygm::container::set<int> sset(world);
     buckets.push_back(&sset);
@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
         });
 
     writer(world, mat);
+    //float tent = mat.get_tent(7);
+    //std::cout << "(7, " << tent << ")" << std::endl;
     // get num of buckets
 
     // use user defined num of buckets
