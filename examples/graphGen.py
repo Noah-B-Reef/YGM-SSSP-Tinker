@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-for i in range(10):
+for i in range(100):
 
     graph_choice = np.random.randint(1,4)
 
