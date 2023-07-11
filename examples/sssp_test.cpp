@@ -54,9 +54,7 @@ int main(int argc, char *argv[]) {
             v.tent = 0;
         });
 
-    float tent = mat.get_tent(7);
-    std::cout << "(7, " << tent << ")" << std::endl; 
-
+    writer(world, mat);
     // get num of buckets
 
     // use user defined num of buckets

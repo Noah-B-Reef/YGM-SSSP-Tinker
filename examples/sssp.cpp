@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
     std::size_t num_buckets = 0;
     static float delta = 3;
     float max_weight; // the maximum shortest path weight -> 21 for testing
+    float max_degree;
     
     if (argc > 1) {
         num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing

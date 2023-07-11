@@ -43,7 +43,7 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
     fin.open(path);
 
     std::vector <std::string> row;
-    std::vector <std::tuple<int, float>> adj;
+    std::vector <std::tuple<size_t, float>> adj;
     std::string line, word, temp;
 
     // keep track of current node's adjacency list
@@ -96,3 +96,10 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
     fin.close();
 }
 
+void writer(ygm::comm &world, ygm::container::map<size_t, adj_list> &mat){
+    mat.all_gather();
+    mat.for_all([&mat](auto k, auto v)
+    {
+        std::cout << "node " << k << " owned by rank " << mat.owner(k) << std::endl;
+    });
+}
