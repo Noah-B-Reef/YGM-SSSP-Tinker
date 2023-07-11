@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 
     // the array of sets of vertices
     std::vector<ygm::container::set<std::size_t>> buckets;
-    ygm::container::map<std::size_t, adj_list> map(world);
+    static ygm::container::map<std::size_t, adj_list> map(world);
 
     // THIS WILL NEED TO BE CHANGED!!
     std::size_t num_buckets = 0;
@@ -61,7 +61,6 @@ int main(int argc, char* argv[]) {
 
 
     // add the sets to the vector -------------------------------------------------------------------------------------
-    // TODO: static pointers to the map, vec??
     for (int i = 0; i < num_buckets; ++i) {
         buckets.emplace_back(world);
     }
@@ -75,9 +74,7 @@ int main(int argc, char* argv[]) {
     });
     // insert the source into the first bucket
     buckets[0].async_insert(0);
-
-    std::cout << buckets[0].size() << std::endl;
-
+    
     // duplicate the current bucket -----------------------------------------------------------
     ygm::container::set<std::size_t> bucket_copy(world);
 
@@ -97,7 +94,7 @@ int main(int argc, char* argv[]) {
 
     // For a given node (this is the tail of an edge from a node in the current bucket),
     // update the tent value if the potential is better
-    static auto relax_requests_lambda = [&map](auto &vertex, auto &potential_tent) {
+    static auto relax_requests_lambda = [](auto &vertex, auto &potential_tent) {
         map.async_visit(vertex, [](auto &node, adj_list &node_info, auto &potential_tent) {
             if (potential_tent < node_info.tent) {
                 // update the tentative
@@ -119,7 +116,7 @@ int main(int argc, char* argv[]) {
     while (idx < num_buckets) {
         // check to see if there is even anything in the current bucket
         while (buckets[idx].size() > 0) {
-            buckets[idx].for_all([&map](auto vertex) {
+            buckets[idx].for_all([](auto vertex) {
                 // add all vertices in the current bucket to the copy
                 fill_bucket_copy_lambda(vertex);
 
@@ -140,7 +137,7 @@ int main(int argc, char* argv[]) {
         }
 
         // do the heavy relaxations (only one round) ---------------------------------------------------------------------
-        bucket_copy.for_all([&map](auto vertex) {
+        bucket_copy.for_all([](auto vertex) {
             // go to that row in the map and relax requests
             map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
                 for (std::tuple<std::size_t, float> edge : head_info.edges) {
