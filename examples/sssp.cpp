@@ -14,12 +14,9 @@
 int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
 
-    // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-    ygm::container::map<std::size_t, adj_list> map(world);
-    getGraph(world, map);
-
     // the array of sets of vertices
     std::vector<ygm::container::set<std::size_t>> buckets;
+    ygm::container::map<std::size_t, adj_list> map(world);
 
     // THIS WILL NEED TO BE CHANGED!!
     std::size_t num_buckets = 0;
@@ -28,12 +25,34 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
         static float delta = std::atoi(argv[2]); // -> 3 for testing
+        std::string path = argv[3];
+
+        // here is the lookup map for vertices and their best tent values/adj list (as a struct)
+        getGraph(world, map);
     }
     else {
 
-        num_buckets = 9; // = ceil(max_cost / delta) + 2; -> 9 for testing
-        static float delta = 3; // -> 3 for testing
+        std::string path = "";
+        int degree = 0;
+
+        // here is the lookup map for vertices and their best tent values/adj list (as a struct)
+        getGraph(world, map);
+
+        map.for_all([&degree](auto k, auto v)
+        {
+            if (v.edges.size() > degree)
+            {
+                degree = v.edges.size()-1;
+            }
+        });
+
+        max_degree = world.all_reduce_max(degree);
+
+        delta = 1.0/max_degree;
+        
+        num_buckets = (size_t)ceil(max_weight/delta);
     }
+
 
 
     // add the sets to the vector -------------------------------------------------------------------------------------
