@@ -10,6 +10,7 @@
 #include <ygm/container/set.hpp>
 #include <ygm/container/map.hpp>
 #include "adjacency.h"
+#include "rmat_gen_graphs.h"
 
 int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
@@ -27,10 +28,11 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
         static float delta = std::atoi(argv[2]); // -> 3 for testing
-        std::string path = argv[3];
-
+        //std::string path = argv[3];
+	int rmat_scale = std::atoi(argv[3]);
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-        getGraph(world, map, max_weight, path);
+        //getGraph(world, map, max_weight, path);
+        generate_rmat_graph(world, map, rmat_scale);
     }
     else {
 
@@ -38,7 +40,8 @@ int main(int argc, char* argv[]) {
         int degree = 0;
 
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-        getGraph(world, map, max_weight, path);
+        //getGraph(world, map, max_weight, path);
+	generate_rmat_graph(world, map, 8);
 
         map.for_all([&degree](auto k, auto v)
         {
@@ -58,7 +61,6 @@ int main(int argc, char* argv[]) {
 
 
     // add the sets to the vector -------------------------------------------------------------------------------------
-    // TODO: update this so that it is not hard coded... there are issues with this :(
     // TODO: static pointers to the map, vec??
     for (int i = 0; i < num_buckets; ++i) {
         buckets.emplace_back(world);
