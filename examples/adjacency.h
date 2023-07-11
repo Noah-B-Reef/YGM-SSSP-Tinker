@@ -16,7 +16,7 @@
 using namespace std;
 struct adj_list {
 
-    std::vector<std::tuple<int, float>> edges;
+    std::vector<std::tuple<std::size_t, float>> edges;
 
     float tent;
 
@@ -85,7 +85,7 @@ class adj_mat{
 */
 
 // load in graph from data.csv
-void getGraph(ygm::comm &world, ygm::container::map<int, adj_list> &mat) {
+void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat) {
     float Inf = std::numeric_limits<float>::infinity();
 
     // file pointer
@@ -95,7 +95,7 @@ void getGraph(ygm::comm &world, ygm::container::map<int, adj_list> &mat) {
     fin.open("/home/molliep/ygm/examples/data.csv");
 
     std::vector <string> row;
-    std::vector<std::tuple<int, float>> adj;
+    std::vector<std::tuple<std::size_t, float>> adj;
     string line, word, temp;
 
     // keep track of current node's adjacency list

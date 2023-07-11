@@ -15,14 +15,14 @@ int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
 
     // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-    ygm::container::map<int, adj_list> map(world);
+    ygm::container::map<std::size_t, adj_list> map(world);
     getGraph(world, map);
 
     // the array of sets of vertices
-    std::vector<ygm::container::set<int>*> buckets;
+    std::vector<ygm::container::set<std::size_t>> buckets;
 
     // THIS WILL NEED TO BE CHANGED!!
-    int num_buckets = 0;
+    std::size_t num_buckets = 0;
     static float delta = 3;
     float max_cost; // the maximum shortest path weight -> 21 for testing
     if (argc > 1) {
@@ -38,33 +38,11 @@ int main(int argc, char* argv[]) {
 
     // add the sets to the vector -------------------------------------------------------------------------------------
     // TODO: update this so that it is not hard coded... there are issues with this :(
+    // TODO: static pointers to the map, vec??
+    for (int i = 0; i < num_buckets; ++i) {
+        buckets.emplace_back(world);
+    }
 
-    ygm::container::set<int> bucket0(world);
-    buckets.push_back(&bucket0);
-
-    ygm::container::set<int> bucket1(world);
-    buckets.push_back(&bucket1);
-
-    ygm::container::set<int> bucket2(world);
-    buckets.push_back(&bucket2);
-
-    ygm::container::set<int> bucket3(world);
-    buckets.push_back(&bucket3);
-
-    ygm::container::set<int> bucket4(world);
-    buckets.push_back(&bucket4);
-
-    ygm::container::set<int> bucket5(world);
-    buckets.push_back(&bucket5);
-
-    ygm::container::set<int> bucket6(world);
-    buckets.push_back(&bucket6);
-
-    ygm::container::set<int> bucket7(world);
-    buckets.push_back(&bucket7);
-
-    ygm::container::set<int> bucket8(world);
-    buckets.push_back(&bucket8);
 
     int idx = 0;
     // complete a source relaxation --------------------------------------------------------------------------------------
@@ -73,24 +51,25 @@ int main(int argc, char* argv[]) {
         source_info.tent = 0;
     });
     // insert the source into the first bucket
-    buckets[0]->async_insert(0);
+    buckets[0].async_insert(0);
 
+    std::cout << buckets[0].size() << std::endl;
 
     // duplicate the current bucket -----------------------------------------------------------
-    ygm::container::set<int> bucket_copy(world);
+    ygm::container::set<std::size_t> bucket_copy(world);
 
     static auto fill_bucket_copy_lambda = [&bucket_copy](const auto &vertex) {
         // if the vertex is not already in the copy bucket, add it
         bucket_copy.async_insert(vertex);
     };
 
-    buckets[idx]->for_all([](const int &vertex) {
+    buckets[idx].for_all([](const auto &vertex) {
        fill_bucket_copy_lambda(vertex);
     });
 
     // process the current bucket ---------------------------------------------------------------
     static auto add_vertex_to_bucket_lambda = [&buckets](auto &vertex, auto &idx) {
-        buckets[idx]->async_insert(vertex);
+        buckets[idx].async_insert(vertex);
     };
 
     // For a given node (this is the tail of an edge from a node in the current bucket),
@@ -107,8 +86,8 @@ int main(int argc, char* argv[]) {
     };
 
     // Remove a given node from the current bucket
-    auto remove_from_bucket_lambda = [&buckets, &idx](const auto &vertex) {
-        buckets[idx]->async_erase(vertex);
+    static auto remove_from_bucket_lambda = [&buckets, &idx](const auto &vertex) {
+        buckets[idx].async_erase(vertex);
     };
 
     // for all vertices in the current bucket:
@@ -116,8 +95,8 @@ int main(int argc, char* argv[]) {
     // then, go to that row in the map, walk through its adjacency list and relax all requests
     while (idx < num_buckets) {
         // check to see if there is even anything in the current bucket
-        while (buckets[idx]->size() > 0) {
-            buckets[idx]->for_all([&map, &remove_from_bucket_lambda](int vertex) {
+        while (buckets[idx].size() > 0) {
+            buckets[idx].for_all([&map](auto vertex) {
                 // add all vertices in the current bucket to the copy
                 fill_bucket_copy_lambda(vertex);
 
@@ -126,7 +105,7 @@ int main(int argc, char* argv[]) {
 
                 // go to that row in the map and relax requests
                 map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
-                    for (std::tuple<int, float> edge : head_info.edges) {
+                    for (std::tuple<std::size_t, float> edge : head_info.edges) {
                         if (std::get<1>(edge) <= delta) {
                             float potential_tent = head_info.tent + std::get<1>(edge);
                             relax_requests_lambda(std::get<0>(edge), potential_tent);
@@ -138,10 +117,10 @@ int main(int argc, char* argv[]) {
         }
 
         // do the heavy relaxations (only one round) ---------------------------------------------------------------------
-        bucket_copy.for_all([&map](int vertex) {
+        bucket_copy.for_all([&map](auto vertex) {
             // go to that row in the map and relax requests
             map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
-                for (std::tuple<int, float> edge : head_info.edges) {
+                for (std::tuple<std::size_t, float> edge : head_info.edges) {
                     if (std::get<1>(edge) > delta) {
                         float potential_tent = head_info.tent + std::get<1>(edge);
                         relax_requests_lambda(std::get<0>(edge), potential_tent);
@@ -159,5 +138,4 @@ int main(int argc, char* argv[]) {
     map.for_all([](auto &vertex, adj_list &vertex_info) {
         std::cout << "tent(" << vertex << ") = " << vertex_info.tent << std::endl;
     });
-
 }
