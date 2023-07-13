@@ -98,17 +98,9 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
 
 void writer(ygm::comm &world, ygm::container::map<size_t, adj_list> &mat){
 
-    // Create an output filestream object
-    //std::ofstream myFile("test.csv");
-    
-    
     
     mat.for_all([&mat](auto k, auto &v)
     {
         std::cout <<  k << ", " << v.tent << std::endl;
-        //myFile << k << ", " << v.tent << "\n";
     });
-
-    // Close the file
-    //myFile.close();
 }
