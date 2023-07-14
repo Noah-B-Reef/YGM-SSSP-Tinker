@@ -94,13 +94,7 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
 
     world.barrier();
     fin.close();
+
 }
 
-void writer(ygm::comm &world, ygm::container::map<size_t, adj_list> &mat){
 
-    
-    mat.for_all([&mat](auto k, auto &v)
-    {
-        std::cout <<  k << ", " << v.tent << std::endl;
-    });
-}

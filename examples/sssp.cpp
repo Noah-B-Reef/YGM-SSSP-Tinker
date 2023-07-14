@@ -156,6 +156,6 @@ int main(int argc, char* argv[]) {
 
     // print out the final distances from the source for each node
     map.for_all([](auto &vertex, adj_list &vertex_info) {
-        std::cout << "tent(" << vertex << ") = " << vertex_info.tent << std::endl;
+        std::cout << "" << vertex << ", " << vertex_info.tent << std::endl;
     });
 }
