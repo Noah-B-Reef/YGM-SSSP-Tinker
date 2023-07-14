@@ -8,17 +8,20 @@
 //
 // Created by mfpate on 7/11/23.
 //
+
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <tuple>
 #include "rmat_edge_generator.hpp"
 #include <ygm/container/map.hpp>
+#include <ygm/container/bag.hpp>
 #include <ygm/utility.hpp>
 
 void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &map, int rmat_scale) {
     //ygm::comm world(&argc, &argv);
 
-    float INF = std::numeric_limits<float>::infinity();
+    static float INF = std::numeric_limits<float>::infinity();
     //int rmat_scale = atoi(argv[1]);
 
     uint64_t total_num_edges = uint64_t(1) << (uint64_t(rmat_scale + 4)); /// Number of total edges (avg 16 per vertex)
@@ -36,46 +39,43 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
     //ygm::container::map<std::size_t, adj_list> map(world);
 
 
+    static ygm::container::set<std::size_t> keys(world);
+    static ygm::container::bag<std::tuple<std::size_t, std::size_t>> edges(world);
+
+
     auto edge_gen_iter = rmat.begin();
     auto edge_gen_end = rmat.end();
     while (edge_gen_iter != edge_gen_end) {
         auto &edge = *edge_gen_iter;
-
         auto vtx1 = std::get<0>(edge);
         auto vtx2 = std::get<1>(edge);
 
-        // check to see if that vtx1 is already a key in the map
-        if (map.count(vtx1) > 0) {
-            // append this edge to the existing list of edges for that node
-            map.async_visit(vtx1, [](auto &node, auto &node_info, const auto &tail) {
-                // if the edge is not already in the list, push_back
-                bool exists = false;
-                for (std::tuple<std::size_t, float> edge : node_info.edges) {
-                    if (std::get<0>(edge) == tail) {
-                        exists = true;
-                    }
-                }
-                // if the edge does not exist, insert it
-                if (!exists) {
-                    std::tuple<std::size_t, float> to_insert = std::make_tuple(tail, 1);
-                    node_info.edges.push_back(to_insert);
-                }
-            }, vtx2);
-        }
-        else {
-            std::tuple<std::size_t, float> to_insert = std::make_tuple(vtx2, 1);
-            std::vector<std::tuple<std::size_t, float>> edges;
-            edges.push_back(to_insert);
-            adj_list new_adj_list = {edges, INF};
-            map.async_insert(vtx1, new_adj_list);
-        }
-        //adj_list vtx_info = {vtx2, 1};
-        //map.async_insert(vtx1, vtx_info);
-        //std::cout << "vtx1: " << vtx1 << ", vtx2: " << vtx2 << std::endl;
+        keys.async_insert(vtx1);
+        std::tuple<std::size_t, std::size_t> test = std::make_tuple(vtx1, vtx2);
+        edges.async_insert(test);
+
         ++edge_gen_iter;
     }
 
-    map.for_all([](auto k, auto v) {
+    // now, populate the map
+    keys.for_all([&map](auto head) {
+        std::vector<std::tuple<std::size_t, float>> edge_vec;
+       edges.for_all([&edge_vec, &head](auto edge) {
+           if (std::get<0>(edge) == head && std::get<1>(edge) != head) {
+               std::tuple<std::size_t, std::size_t> potential_edge = std::make_tuple(std::get<1>(edge), 1);
+               if (std::find(edge_vec.begin(), edge_vec.end(), potential_edge) != edge_vec.end()) {
+                    // do nothing
+               }
+               else {
+                   edge_vec.push_back(potential_edge);
+               }
+           }
+       });
+       adj_list insert = {edge_vec, INF};
+       map.async_insert(head, insert);
+    });
+
+    map.for_all([](auto k, auto &v) {
         for (std::tuple<std::size_t, float> edge : v.edges) {
             std::cout << "{" << k << ", " << std::get<0>(edge) << "} -> tent = " << v.tent << std::endl;
         }
