@@ -76,9 +76,6 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
                 }
             }
 
-            // get largest max across all ranks
-            max_weight = world.all_reduce_max(max);
-
             adj.clear();
             curr_node++;
         }
@@ -93,6 +90,10 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
         }
 
     world.barrier();
+
+     // get largest max across all ranks
+    max_weight = world.all_reduce_max(max);
+
     fin.close();
 
 }
