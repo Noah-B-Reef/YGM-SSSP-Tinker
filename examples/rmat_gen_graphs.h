@@ -10,6 +10,7 @@
 //
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <tuple>
@@ -17,6 +18,7 @@
 #include <ygm/container/map.hpp>
 #include <ygm/container/bag.hpp>
 #include <ygm/utility.hpp>
+
 
 void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &map, int rmat_scale) {
     //ygm::comm world(&argc, &argv);
@@ -75,11 +77,16 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
        map.async_insert(head, insert);
     });
 
-    map.for_all([](auto k, auto &v) {
+    std::ofstream outfile("rmat_gen_graph.mm");
+    outfile << "%%MatrixMarket matrix coordinate real general\n";
+
+    map.for_all([&outfile](auto k, auto &v) {
         for (std::tuple<std::size_t, float> edge : v.edges) {
             std::cout << "{" << k << ", " << std::get<0>(edge) << "} -> tent = " << v.tent << std::endl;
+            outfile << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << "\n";
         }
     });
+    outfile.close();
 
     world.cout0("RMAT generation time: ", step_timer.elapsed(), " seconds");
 }
