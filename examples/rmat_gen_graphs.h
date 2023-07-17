@@ -77,7 +77,7 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
        map.async_insert(head, insert);
     });
 
-    std::ofstream outfile("rmat_gen_graph.mm");
+    std::ofstream outfile("/home/molliep/ygm/examples/rmat_gen_graph.mm");
     outfile << "%%MatrixMarket matrix coordinate real general\n";
 
     map.for_all([&outfile](auto k, auto &v) {
