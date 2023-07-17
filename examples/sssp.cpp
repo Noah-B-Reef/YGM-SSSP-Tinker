@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 
         static float delta = 1.0/max_degree;
         
-        num_buckets = (size_t)ceil(max_weight/delta);
+        num_buckets = (size_t)ceil(max_weight/delta) + 1;
     }
 
 
