@@ -130,6 +130,12 @@ class set_impl {
     local_for_all(fn);
   }
 
+  template <typename Function>
+  void consume_all(Function fn) {
+    m_comm.barrier();
+    local_consume_all(fn);
+  }
+
   void clear() {
     m_comm.barrier();
     m_local_set.clear();
@@ -192,6 +198,21 @@ class set_impl {
     }
   }
 
+  template <typename Function>
+  void local_consume_all(Function fn) {
+    if constexpr (std::is_invocable<decltype(fn), const key_type &>()) {
+      while (!m_local_set.empty()) {
+        auto tmp = *(m_local_set.begin());
+        m_local_set.erase(m_local_set.begin());
+        fn(tmp);
+      }
+    } else {
+      static_assert(ygm::detail::always_false<>,
+                    "local set lambda signature must be invocable with (const "
+                    "key_type &) signature");
+    }
+  }
+
   int owner(const key_type &key) const {
     auto [owner, rank] = partitioner(key, m_comm.size(), 1024);
     return owner;
@@ -199,7 +220,7 @@ class set_impl {
   set_impl() = delete;
 
   std::multiset<key_type, Compare, Alloc> m_local_set;
-  ygm::comm                               m_comm;
+  ygm::comm                              &m_comm;
   typename ygm::ygm_ptr<self_type>        pthis;
 };
 }  // namespace ygm::container::detail
