@@ -14,7 +14,23 @@
 #include <ygm/comm.hpp>
 #include <ygm/utility.hpp>
 
-
+/*
+ * NOTES ON HOW TO RUN:
+ * this program can generate output files for both YGM and Bale implementations, depending on
+ * which lines are uncommented.
+ *
+ * For the YGM implementation files, uncomment the lines that are commented "this is for the YGM impl"
+ * and for Bale, uncomment the lines "this is for the bale impl"
+ *
+ * Compile, and then on the command line, salloc and run:
+ *      For YGM:
+ *          srun -o {PATH TO DESIRED OUTPUT FILE}/rmat_gen_graph.csv examples/rmat_gen_graphs {rmat_scale}
+ *      For Bale:
+ *          srun -o {PATH TO DESIRED OUTPUT FILE}/rmat_gen_graph.mm examples/rmat_gen_graphs {rmat_scale}
+ *
+ * Now, go to the specified location, and your file will be there
+ *
+ */
 int main(int argc, char **argv) {
     ygm::comm world(&argc, &argv);
 
@@ -28,13 +44,11 @@ int main(int argc, char **argv) {
     rmat_edge_generator rmat(world.rank(), rmat_scale, local_num_edges, 0.57, 0.19, 0.19, 0.05, scramble, undirected);
 
     // Build undirected version of graph
-    //world.cout0("Generating undirected RMAT graph scale ", rmat_scale);
     ygm::timer step_timer{};
     ygm::timer preprocess_timer{};
 
     // Graph with ints for IDs, and bools as dummy vertex and edge metadata
     static ygm::container::map<std::size_t, adj_list> map(world);
-
 
     ygm::container::set<std::size_t> keys(world);
     static ygm::container::bag<std::tuple<std::size_t, std::size_t>> edges(world);
@@ -72,8 +86,12 @@ int main(int argc, char **argv) {
         map.async_insert(head, insert);
     });
 
+    // this is for the YGM impl
+    std::cout << "source,end,weight" << std::endl;
+    // this is for the Bale impl
+    // std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
 
-    std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
+
     map.for_all([](auto k, auto &v) {
         for (std::tuple<std::size_t, float> edge : v.edges) {
             // this is for YGM impl -> .csv
@@ -82,7 +100,4 @@ int main(int argc, char **argv) {
             //std::cout << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
         }
     });
-
-    //world.cout0("RMAT generation time: ", step_timer.elapsed(), " seconds");
-
 }
