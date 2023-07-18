@@ -130,12 +130,12 @@ int main(int argc, char* argv[]) {
     while (idx < num_buckets) {
         // check to see if there is even anything in the current bucket
         while (buckets[idx].size() > 0) {
-            buckets[idx].for_all([](auto vertex) {
+            buckets[idx].consume_all([](auto vertex) {
                 // add all vertices in the current bucket to the copy
                 fill_bucket_copy_lambda(vertex);
 
                 // remove the current vertex from the current bucket
-                remove_from_bucket_lambda(vertex);
+                //remove_from_bucket_lambda(vertex);
 
                 // go to that row in the map and relax requests
                 map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         }
 
         // do the heavy relaxations (only one round) ---------------------------------------------------------------------
-        bucket_copy.for_all([](auto vertex) {
+        bucket_copy.consume_all([](auto vertex) {
             // go to that row in the map and relax requests
             map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
                 for (std::tuple<std::size_t, float> edge : head_info.edges) {
