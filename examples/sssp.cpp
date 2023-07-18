@@ -6,6 +6,7 @@
 #include <cmath>
 #include <tuple>
 #include <vector>
+#include <ygm/for_all_adapter.hpp>
 #include <ygm/comm.hpp>
 #include <ygm/container/set.hpp>
 #include <ygm/container/map.hpp>
@@ -131,6 +132,7 @@ int main(int argc, char* argv[]) {
     // first, remove them from the bucket
     // then, go to that row in the map, walk through its adjacency list and relax all requests
     while (idx < num_buckets) {
+        // check to see if there is even anything in the current bucket
         // this wrapper prevents the race condition on re-insertions to the same bucket
         ygm::consume_all_iterative_adapter curr_bucket_wrapper(buckets[idx]);
         curr_bucket_wrapper.consume_all([](auto vertex) {
@@ -146,7 +148,6 @@ int main(int argc, char* argv[]) {
                     if (std::get<1>(edge) <= delta) {
                         float potential_tent = head_info.tent + std::get<1>(edge);
                         relax_requests_lambda(std::get<0>(edge), potential_tent);
-
                     }
                 }
             });
