@@ -6,12 +6,12 @@
 #include <cmath>
 #include <tuple>
 #include <vector>
-#include <ygm/for_all_adapter.hpp>
 #include <ygm/comm.hpp>
 #include <ygm/container/set.hpp>
 #include <ygm/container/map.hpp>
 #include "adjacency.h"
 #include "rmat_gen_graphs.h"
+#include <chrono>
 
 int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
@@ -62,7 +62,7 @@ int main(int argc, char* argv[]) {
         {
             if (v.edges.size() > degree)
             {
-                degree = v.edges.size()-1;
+                degree = v.edges.size();
             }
         });
 
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
         static float delta = 1.0/max_degree;
         
-        num_buckets = (size_t)ceil(max_weight/delta) + 2;
+        num_buckets = (size_t)ceil(max_weight/delta) + 1;
     }
 
 
@@ -80,6 +80,8 @@ int main(int argc, char* argv[]) {
         buckets.emplace_back(world);
     }
 
+    // start timing
+    auto beg = std::chrono::high_resolution_clock::now();
 
     int idx = 0;
     // complete a source relaxation --------------------------------------------------------------------------------------
@@ -129,11 +131,9 @@ int main(int argc, char* argv[]) {
     // first, remove them from the bucket
     // then, go to that row in the map, walk through its adjacency list and relax all requests
     while (idx < num_buckets) {
-        ygm::consume_all_iterative_adapter wrapped_bucket(buckets[idx]);
         // check to see if there is even anything in the current bucket
         while (buckets[idx].size() > 0) {
-            //buckets[idx].consume_all([](auto vertex) {
-            wrapped_bucket.consume_all([](auto vertex) {
+            buckets[idx].consume_all([](auto vertex) {
                 // add all vertices in the current bucket to the copy
                 fill_bucket_copy_lambda(vertex);
 
@@ -154,7 +154,6 @@ int main(int argc, char* argv[]) {
         }
 
         // do the heavy relaxations (only one round) ---------------------------------------------------------------------
-        // these relaxations will not result in a current bucket insertion, so no wrapper is necessary
         bucket_copy.consume_all([](auto vertex) {
             // go to that row in the map and relax requests
             map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
@@ -171,6 +170,14 @@ int main(int argc, char* argv[]) {
         ++idx;
         bucket_copy.clear();
     }
+
+    // end timing
+    auto end = std::chrono::high_resolution_clock::now();
+x
+    // compute total elapsed time
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
+
+    std::cout << "Total Elapsed Time (ms): " << duration.count()/1000.0 << std::endl;
 
     // print out the final distances from the source for each node
     map.for_all([](auto &vertex, adj_list &vertex_info) {
