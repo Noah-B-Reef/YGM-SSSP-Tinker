@@ -11,6 +11,7 @@
 #include <ygm/container/map.hpp>
 #include "adjacency.h"
 #include "rmat_gen_graphs.h"
+#include <chrono>
 
 int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
@@ -61,7 +62,7 @@ int main(int argc, char* argv[]) {
         {
             if (v.edges.size() > degree)
             {
-                degree = v.edges.size()-1;
+                degree = v.edges.size();
             }
         });
 
@@ -69,7 +70,7 @@ int main(int argc, char* argv[]) {
 
         static float delta = 1.0/max_degree;
         
-        num_buckets = (size_t)ceil(max_weight/delta) + 2;
+        num_buckets = (size_t)ceil(max_weight/delta) + 1;
     }
 
 
@@ -79,6 +80,8 @@ int main(int argc, char* argv[]) {
         buckets.emplace_back(world);
     }
 
+    // start timing
+    auto beg = std::chrono::high_resolution_clock::now();
 
     int idx = 0;
     // complete a source relaxation --------------------------------------------------------------------------------------
@@ -167,6 +170,14 @@ int main(int argc, char* argv[]) {
         ++idx;
         bucket_copy.clear();
     }
+
+    // end timing
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // compute total elapsed time
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
+
+    std::cout << "Total Elapsed Time (ms): " << duration.count()/1000.0 << std::endl;
 
     // print out the final distances from the source for each node
     map.for_all([](auto &vertex, adj_list &vertex_info) {
