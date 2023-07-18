@@ -31,6 +31,7 @@
  * Now, go to the specified location, and your file will be there
  *
  */
+
 int main(int argc, char **argv) {
     ygm::comm world(&argc, &argv);
 
@@ -68,10 +69,11 @@ int main(int argc, char **argv) {
         ++edge_gen_iter;
     }
 
+    std::size_t l_num_edges = 0;
     // now, populate the map
-    keys.for_all([](auto head) {
+    keys.for_all([&l_num_edges](auto head) {
         std::vector<std::tuple<std::size_t, float>> edge_vec;
-        edges.for_all([&edge_vec, &head](auto edge) {
+        edges.for_all([&edge_vec, &head, &l_num_edges](auto edge) {
             if (std::get<0>(edge) == head && std::get<1>(edge) != head) {
                 std::tuple<std::size_t, std::size_t> potential_edge = std::make_tuple(std::get<1>(edge), 1);
                 if (std::find(edge_vec.begin(), edge_vec.end(), potential_edge) != edge_vec.end()) {
@@ -79,6 +81,7 @@ int main(int argc, char **argv) {
                 }
                 else {
                     edge_vec.push_back(potential_edge);
+                    ++l_num_edges;
                 }
             }
         });
@@ -86,18 +89,24 @@ int main(int argc, char **argv) {
         map.async_insert(head, insert);
     });
 
-    // this is for the YGM impl
-    std::cout << "source,end,weight" << std::endl;
-    // this is for the Bale impl
-    // std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
+    std::size_t num_edges = world.all_reduce_sum(l_num_edges);
+    std::size_t num_vertices = keys.size();
+    if (world.rank() == 0) {
+        // this is for the YGM impl
+        //std::cout << "source,end,weight" << std::endl;
+        // this is for the Bale impl
+        std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
+        std::cout << num_vertices << " " << num_vertices << " " << num_edges << std::endl;
+    }
+    world.barrier();
 
 
     map.for_all([](auto k, auto &v) {
         for (std::tuple<std::size_t, float> edge : v.edges) {
             // this is for YGM impl -> .csv
-            std::cout << k << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
+            //std::cout << k << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
             // this is for Bale impl -> .mm
-            //std::cout << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
+            std::cout << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
         }
     });
 }
