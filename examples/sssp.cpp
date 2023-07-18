@@ -131,27 +131,26 @@ int main(int argc, char* argv[]) {
     // first, remove them from the bucket
     // then, go to that row in the map, walk through its adjacency list and relax all requests
     while (idx < num_buckets) {
-        // check to see if there is even anything in the current bucket
-        while (buckets[idx].size() > 0) {
-            buckets[idx].consume_all([](auto vertex) {
-                // add all vertices in the current bucket to the copy
-                fill_bucket_copy_lambda(vertex);
+        // this wrapper prevents the race condition on re-insertions to the same bucket
+        ygm::consume_all_iterative_adapter curr_bucket_wrapper(buckets[idx]);
+        curr_bucket_wrapper.consume_all([](auto vertex) {
+            // add all vertices in the current bucket to the copy
+            fill_bucket_copy_lambda(vertex);
 
-                // remove the current vertex from the current bucket
-                //remove_from_bucket_lambda(vertex);
+            // remove the current vertex from the current bucket
+            //remove_from_bucket_lambda(vertex);
 
-                // go to that row in the map and relax requests
-                map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
-                    for (std::tuple<std::size_t, float> edge : head_info.edges) {
-                        if (std::get<1>(edge) <= delta) {
-                            float potential_tent = head_info.tent + std::get<1>(edge);
-                            relax_requests_lambda(std::get<0>(edge), potential_tent);
-                        }
+            // go to that row in the map and relax requests
+            map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
+                for (std::tuple<std::size_t, float> edge : head_info.edges) {
+                    if (std::get<1>(edge) <= delta) {
+                        float potential_tent = head_info.tent + std::get<1>(edge);
+                        relax_requests_lambda(std::get<0>(edge), potential_tent);
+
                     }
-                });
+                }
             });
-            world.barrier();
-        }
+        });
 
         // do the heavy relaxations (only one round) ---------------------------------------------------------------------
         bucket_copy.consume_all([](auto vertex) {
@@ -173,7 +172,7 @@ int main(int argc, char* argv[]) {
 
     // end timing
     auto end = std::chrono::high_resolution_clock::now();
-x
+
     // compute total elapsed time
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
 
