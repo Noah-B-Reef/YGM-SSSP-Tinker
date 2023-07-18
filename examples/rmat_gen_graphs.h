@@ -77,16 +77,21 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
        map.async_insert(head, insert);
     });
 
-    std::ofstream outfile("/home/molliep/ygm/examples/rmat_gen_graph.mm");
-    outfile << "%%MatrixMarket matrix coordinate real general\n";
+    std::ofstream matrix_market_outfile("/home/molliep/ygm/examples/rmat_gen_graph.mm");
+    std::ofstream csv_outfile("/home/molliep/ygm/examples/rmat_gen_graph.csv");
 
-    map.for_all([&outfile](auto k, auto &v) {
+    matrix_market_outfile << "%%MatrixMarket matrix coordinate real general\n";
+    csv_outfile << "source,end,weight\n";
+
+    map.for_all([&matrix_market_outfile, &csv_outfile](auto k, auto &v) {
         for (std::tuple<std::size_t, float> edge : v.edges) {
             std::cout << "{" << k << ", " << std::get<0>(edge) << "} -> tent = " << v.tent << std::endl;
-            outfile << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << "\n";
+            matrix_market_outfile << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << "\n";
+            csv_outfile << k << "," << std::get<0>(edge) << "," << std::get<1>(edge) << "\n";
         }
     });
-    outfile.close();
+    matrix_market_outfile.close();
+    csv_outfile.close();
 
     world.cout0("RMAT generation time: ", step_timer.elapsed(), " seconds");
 }
