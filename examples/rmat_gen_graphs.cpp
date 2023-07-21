@@ -93,10 +93,10 @@ int main(int argc, char **argv) {
     std::size_t num_vertices = keys.size();
     if (world.rank() == 0) {
         // this is for the YGM impl
-        //std::cout << "source,end,weight" << std::endl;
+        std::cout << "source,end,weight" << std::endl;
         // this is for the Bale impl
-        std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
-        std::cout << num_vertices << " " << num_vertices << " " << num_edges << std::endl;
+        //std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
+        //std::cout << num_vertices << " " << num_vertices << " " << num_edges << std::endl;
     }
     world.barrier();
 
@@ -104,9 +104,9 @@ int main(int argc, char **argv) {
     map.for_all([](auto k, auto &v) {
         for (std::tuple<std::size_t, float> edge : v.edges) {
             // this is for YGM impl -> .csv
-            //std::cout << k << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
+            std::cout << k << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
             // this is for Bale impl -> .mm
-            std::cout << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
+            //std::cout << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
         }
     });
 }

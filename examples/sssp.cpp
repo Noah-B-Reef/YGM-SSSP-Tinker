@@ -177,10 +177,29 @@ int main(int argc, char* argv[]) {
     // compute total elapsed time
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
 
-    std::cout << "Total Elapsed Time (ms): " << duration.count()/1000.0 << std::endl;
+    int time = duration.count();
 
+    auto global_time = world.all_reduce_max(time);
+
+
+    int num_edges = 0;
+
+    map.for_all([&num_edges](auto key, auto &vertex){
+        num_edges += vertex.edges.size();
+    });
+
+    int global_num_edges = world.all_reduce_sum(num_edges);
+
+     if (world.rank() == 0)
+    {
+        std::cout << global_time/1000.0 << std::endl;
+        std::cout << global_num_edges << std::endl;
+    }
+    
+    /*
     // print out the final distances from the source for each node
     map.for_all([](auto &vertex, adj_list &vertex_info) {
         std::cout << "" << vertex << ", " << vertex_info.tent << std::endl;
     });
+    */
 }
