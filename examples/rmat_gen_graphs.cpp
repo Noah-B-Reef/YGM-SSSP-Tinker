@@ -88,6 +88,45 @@ int main(int argc, char **argv) {
     }
     world.barrier();
 
+    auto edge_gen_iter2 = rmat.begin();
+    auto edge_gen_end2 = rmat.end();
+    while (edge_gen_iter2 != edge_gen_end2) {
+        auto &edge = *edge_gen_iter2;
+        auto vtx1 = std::get<0>(edge);
+        auto vtx2 = std::get<1>(edge);
+
+
+        if (vtx1 != vtx2) {
+            int random = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
+            edge_map.async_visit(vtx1, [](const auto head_vtx, auto &edge_set, auto tail_vtx, auto weight) {
+                std::set<std::tuple<std::size_t, float>>::iterator it;
+                for (it = edge_set.begin(); it != edge_set.end(); it ++) {
+                    if (std::get<0>(*it) == tail_vtx && std::get<1>(*it) == DUMMY_WEIGHT) {
+                        edge_set.erase(*it);
+                        edge_set.insert(std::tuple(tail_vtx, weight));
+                    }
+                }
+
+            }, vtx2, random);
+            edge_map.async_visit(vtx2, [](const auto head_vtx, auto &edge_set, auto tail_vtx, auto weight) {
+                std::set<std::tuple<std::size_t, float>>::iterator it;
+                for (it = edge_set.begin(); it != edge_set.end(); it ++) {
+                    if (std::get<0>(*it) == tail_vtx && std::get<1>(*it) == DUMMY_WEIGHT) {
+                        edge_set.erase(*it);
+                        edge_set.insert(std::tuple(tail_vtx, weight));
+                    }
+                }
+            }, vtx1, random);
+        }
+
+
+
+        world.barrier();
+        ++edge_gen_iter2;
+    }
+
+
+/*
     // add the weights to all existing edges
     for (int vtx1 = 0; vtx1 < pow(2, rmat_scale); ++vtx1) {
         for (int vtx2 = 0; vtx2 < pow(2, rmat_scale); ++vtx2) {
@@ -114,7 +153,7 @@ int main(int argc, char **argv) {
                 }, vtx1, random);
             }
         }
-    }
+    }*/
     world.barrier();
 
     // print out the edges
