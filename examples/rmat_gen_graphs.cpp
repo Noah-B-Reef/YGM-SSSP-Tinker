@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
             }, vtx1, weight);
 
         }
-        world.barrier();
         ++edge_gen_iter;
     }
     world.barrier();
