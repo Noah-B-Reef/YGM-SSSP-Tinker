@@ -118,10 +118,6 @@ int main(int argc, char **argv) {
                 }
             }, vtx1, random);
         }
-
-
-
-        world.barrier();
         ++edge_gen_iter2;
     }
 
