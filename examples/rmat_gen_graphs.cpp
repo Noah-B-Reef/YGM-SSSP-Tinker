@@ -3,16 +3,19 @@
 //
 #include "adjacency.h"
 #include <cmath>
+#include<cstdlib>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <tuple>
+#include <vector>
 #include "rmat_edge_generator.hpp"
 #include <ygm/container/map.hpp>
 #include <ygm/container/bag.hpp>
 #include <ygm/container/set.hpp>
 #include <ygm/comm.hpp>
 #include <ygm/utility.hpp>
+#include<unistd.h>               // for linux
 
 /*
  * NOTES ON HOW TO RUN:
@@ -48,13 +51,18 @@ int main(int argc, char **argv) {
     ygm::timer step_timer{};
     ygm::timer preprocess_timer{};
 
-    // Graph with ints for IDs, and bools as dummy vertex and edge metadata
-    static ygm::container::map<std::size_t, adj_list> map(world);
+    ygm::container::map<std::size_t, std::set<std::tuple<std::size_t, float>>> edge_map(world);
+    for (int i = 0; i < pow(2, rmat_scale); ++i) {
+        std::set<std::tuple<std::size_t, float>>new_set({});
+        edge_map.async_insert(i, new_set);
+    }
 
-    ygm::container::set<std::size_t> keys(world);
-    static ygm::container::bag<std::tuple<std::size_t, std::size_t>> edges(world);
+    const static int EDGE_WEIGHT_LB = 1;
+    const static int EDGE_WEIGHT_UB= 100;
+    const static int DUMMY_WEIGHT = -1;
+    srand((unsigned) time(NULL));
 
-
+    // create the graph with dummy value weights that will be updated later
     auto edge_gen_iter = rmat.begin();
     auto edge_gen_end = rmat.end();
     while (edge_gen_iter != edge_gen_end) {
@@ -62,51 +70,64 @@ int main(int argc, char **argv) {
         auto vtx1 = std::get<0>(edge);
         auto vtx2 = std::get<1>(edge);
 
-        keys.async_insert(vtx1);
-        std::tuple<std::size_t, std::size_t> test = std::make_tuple(vtx1, vtx2);
-        edges.async_insert(test);
 
+        // Providing a seed value
+        if (vtx1 != vtx2) {
+            edge_map.async_visit(vtx1, [](const auto head_vtx, auto &edge_set, auto tail_vtx) {
+                std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
+                edge_set.insert(to_insert);
+            }, vtx2);
+            edge_map.async_visit(vtx2, [](const auto head_vtx, auto &edge_set, auto tail_vtx) {
+                std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
+                edge_set.insert(to_insert);
+            }, vtx1);
+
+        }
+        world.barrier();
         ++edge_gen_iter;
-    }
-
-    std::size_t l_num_edges = 0;
-    // now, populate the map
-    keys.for_all([&l_num_edges](auto head) {
-        std::vector<std::tuple<std::size_t, float>> edge_vec;
-        edges.for_all([&edge_vec, &head, &l_num_edges](auto edge) {
-            if (std::get<0>(edge) == head && std::get<1>(edge) != head) {
-                std::tuple<std::size_t, std::size_t> potential_edge = std::make_tuple(std::get<1>(edge), 1);
-                if (std::find(edge_vec.begin(), edge_vec.end(), potential_edge) != edge_vec.end()) {
-                    // do nothing
-                }
-                else {
-                    edge_vec.push_back(potential_edge);
-                    ++l_num_edges;
-                }
-            }
-        });
-        adj_list insert = {edge_vec, INF};
-        map.async_insert(head, insert);
-    });
-
-    std::size_t num_edges = world.all_reduce_sum(l_num_edges);
-    std::size_t num_vertices = keys.size();
-    if (world.rank() == 0) {
-        // this is for the YGM impl
-        std::cout << "source,end,weight" << std::endl;
-        // this is for the Bale impl
-        //std::cout << "%%MatrixMarket matrix coordinate real general" << std::endl;
-        //std::cout << num_vertices << " " << num_vertices << " " << num_edges << std::endl;
     }
     world.barrier();
 
+    // add the weights to all existing edges
+    for (int vtx1 = 0; vtx1 < pow(2, rmat_scale); ++vtx1) {
+        for (int vtx2 = 0; vtx2 < pow(2, rmat_scale); ++vtx2) {
+            if (vtx1 != vtx2) {
+                int random = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
+                edge_map.async_visit(vtx1, [](const auto head_vtx, auto &edge_set, auto tail_vtx, auto weight) {
+                    std::set<std::tuple<std::size_t, float>>::iterator it;
+                    for (it = edge_set.begin(); it != edge_set.end(); it ++) {
+                        if (std::get<0>(*it) == tail_vtx && std::get<1>(*it) == DUMMY_WEIGHT) {
+                            edge_set.erase(*it);
+                            edge_set.insert(std::tuple(tail_vtx, weight));
+                        }
+                    }
 
-    map.for_all([](auto k, auto &v) {
-        for (std::tuple<std::size_t, float> edge : v.edges) {
-            // this is for YGM impl -> .csv
-            std::cout << k << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
-            // this is for Bale impl -> .mm
-            //std::cout << k << " " << std::get<0>(edge) << " " << std::get<1>(edge) << std::endl;
+                }, vtx2, random);
+                edge_map.async_visit(vtx2, [](const auto head_vtx, auto &edge_set, auto tail_vtx, auto weight) {
+                    std::set<std::tuple<std::size_t, float>>::iterator it;
+                    for (it = edge_set.begin(); it != edge_set.end(); it ++) {
+                        if (std::get<0>(*it) == tail_vtx && std::get<1>(*it) == DUMMY_WEIGHT) {
+                            edge_set.erase(*it);
+                            edge_set.insert(std::tuple(tail_vtx, weight));
+                        }
+                    }
+                }, vtx1, random);
+            }
+        }
+    }
+    world.barrier();
+
+    // print out the edges
+    if (world.rank() == 0) {
+        // for YGM impl
+        std::cout << "source,end,weight" << std::endl;
+    }
+    world.barrier();
+
+    edge_map.for_all([](auto head_vtx, auto edge_set) {
+        for (auto edge : edge_set) {
+            std::cout << head_vtx << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
         }
     });
+
 }
