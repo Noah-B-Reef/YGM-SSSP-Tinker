@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
             std::cout << "" << vertex << ", " << std::get<0>(e) << " > " << std::get<1>(e) << std::endl;
         }
     });
-
+/*
     // add the sets to the vector -------------------------------------------------------------------------------------
     for (int i = 0; i < num_buckets; ++i) {
         buckets.emplace_back(world);
