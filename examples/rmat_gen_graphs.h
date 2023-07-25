@@ -73,6 +73,7 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
                 edges.edges.insert({tail_vtx, DUMMY_WEIGHT});
             }, vtx1);
         }
+        world.barrier();
         ++edge_gen_iter;
     }
     world.barrier();
@@ -82,7 +83,7 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
     map.for_all([&map, &max_weight](auto vtx, auto &vtx_edges) {
         for (auto& [key, value] : vtx_edges.edges) {
             if (vtx < key) {
-                float weight = (EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB)) / 10;
+                float weight = (EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB));
                 if (weight > max_weight) {
                     max_weight = weight;
                 }

@@ -75,6 +75,11 @@ int main(int argc, char* argv[]) {
         num_buckets = (size_t)ceil(max_weight/delta) + 1;
     }
 
+    map.for_all([](auto &vertex, adj_list &vertex_info) {
+        for (auto e : vertex_info.edges) {
+            std::cout << "" << vertex << ", " << std::get<0>(e) << " > " << std::get<1>(e) << std::endl;
+        }
+    });
 
     // add the sets to the vector -------------------------------------------------------------------------------------
     for (int i = 0; i < num_buckets; ++i) {
