@@ -8,6 +8,7 @@
 #include <ygm/container/set.hpp>
 #include <istream>
 #include <limits>
+#include <map>
 #include <tuple>
 #include <vector>
 #include <string>
@@ -16,7 +17,7 @@
 using namespace std;
 struct adj_list {
 
-    std::vector<std::tuple<std::size_t, float>> edges;
+    std::map<std::size_t, float> edges;
 
     float tent;
 
@@ -43,7 +44,8 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
     fin.open(path);
 
     std::vector <std::string> row;
-    std::vector <std::tuple<std::size_t, float>> adj;
+    std::map<std::size_t, float> adj;
+    //std::vector <std::tuple<std::size_t, float>> adj;
     std::string line, word, temp;
 
     // keep track of current node's adjacency list
@@ -69,7 +71,7 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
                 adj_list insert = {adj, Inf};
                 mat.async_insert(curr_node, insert);
 
-                // update maxs  
+                // update maxs
                 if (max < std::stoi(row[2]))
                 {
                     max = std::stoi(row[2]);
@@ -81,17 +83,18 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
         }
 
 
-        adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
+        //adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
+        adj.insert({std::stoi(row[1]), std::stof(row[2])});
     }
 
-        if (world.rank() == curr_node % world.size()) {
-            adj_list insert = {adj, Inf};
-            mat.async_insert(curr_node, insert);
-        }
+    if (world.rank() == curr_node % world.size()) {
+        adj_list insert = {adj, Inf};
+        mat.async_insert(curr_node, insert);
+    }
 
     world.barrier();
 
-     // get largest max across all ranks
+    // get max across all ranks
     max_weight = world.all_reduce_max(max);
 
     fin.close();

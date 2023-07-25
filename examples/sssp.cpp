@@ -24,22 +24,23 @@ int main(int argc, char* argv[]) {
     // THIS WILL NEED TO BE CHANGED!!
     std::size_t num_buckets = 0;
     static float delta = 3;
-    float max_weight; // the maximum shortest path weight -> 21 for testing
+    float max_weight = 0; // the maximum shortest path weight -> 21 for testing
     float max_degree;
     
     if (argc > 1) {
         //num_buckets = std::atoi(argv[1]); // = ceil(max_cost / delta) + 2; -> 9 for testing
         //static float delta = std::atoi(argv[2]); // -> 3 for testing
-        std::string path = argv[1];
-	//int rmat_scale = std::atoi(argv[3]);
+       // std::string path = argv[1];
+       int rmat_scale = std::atoi(argv[1]);
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-        getGraph(world, map, max_weight, path);
-        //generate_rmat_graph(world, map, rmat_scale);
+        //getGraph(world, map, max_weight, path);
+
+        generate_rmat_graph(world, map, rmat_scale, max_weight);
 
         int degree = 0;
 
-        map.for_all([&degree](auto k, auto v)
-        {
+
+        map.for_all([&degree](auto k, auto v) {
             if (v.edges.size() > degree)
             {
                 degree = v.edges.size();
@@ -56,8 +57,8 @@ int main(int argc, char* argv[]) {
         int degree = 0;
 
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
-        getGraph(world, map, max_weight, path);
-	//generate_rmat_graph(world, map, 8);
+        //getGraph(world, map, max_weight, path);
+	    generate_rmat_graph(world, map, 8, max_weight);
 
         map.for_all([&degree](auto k, auto v)
         {
@@ -73,7 +74,6 @@ int main(int argc, char* argv[]) {
         
         num_buckets = (size_t)ceil(max_weight/delta) + 1;
     }
-
 
 
     // add the sets to the vector -------------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 
             // go to that row in the map and relax requests
             map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
-                for (std::tuple<std::size_t, float> edge : head_info.edges) {
+                for (auto edge : head_info.edges) {
                     if (std::get<1>(edge) <= delta) {
                         float potential_tent = head_info.tent + std::get<1>(edge);
                         relax_requests_lambda(std::get<0>(edge), potential_tent);
@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
         bucket_copy.consume_all([](auto vertex) {
             // go to that row in the map and relax requests
             map.async_visit(vertex, [](const auto &head, adj_list &head_info) {
-                for (std::tuple<std::size_t, float> edge : head_info.edges) {
+                for (auto edge : head_info.edges) {
                     if (std::get<1>(edge) > delta) {
                         float potential_tent = head_info.tent + std::get<1>(edge);
                         relax_requests_lambda(std::get<0>(edge), potential_tent);
