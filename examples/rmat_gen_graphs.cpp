@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
     static float INF = std::numeric_limits<float>::infinity();
     int rmat_scale = atoi(argv[1]);
-    std::string prefix(argv[2]);
+    //std::string prefix(argv[2]);
 
     uint64_t total_num_edges = uint64_t(1) << (uint64_t(rmat_scale + 4)); /// Number of total edges (avg 16 per vertex)
     uint64_t local_num_edges = total_num_edges / world.size() + (world.rank() < total_num_edges % world.size()); /// Number of edges each rank generates
@@ -93,8 +93,15 @@ int main(int argc, char **argv) {
             }, vtx1, max_weight);
         }
         ++edge_gen_iter;
+        world.barrier();
     }
     world.barrier();
+
+    edge_map.for_all([](auto head_vtx, auto edge_set) {
+        for (auto edge : edge_set) {
+            std::cout << head_vtx << "," << std::get<0>(edge) << std::endl;
+        }
+    });
 
 
     edge_map.for_all([&edge_map](auto vtx, auto &vtx_edges) {

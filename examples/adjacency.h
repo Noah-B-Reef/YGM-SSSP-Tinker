@@ -17,7 +17,7 @@
 using namespace std;
 struct adj_list {
 
-    std::map<std::size_t, float> edges;
+    std::vector<std::tuple<std::size_t, float>> edges;
 
     float tent;
 
@@ -44,8 +44,7 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
     fin.open(path);
 
     std::vector <std::string> row;
-    std::map<std::size_t, float> adj;
-    //std::vector <std::tuple<std::size_t, float>> adj;
+    std::vector <std::tuple<std::size_t, float>> adj;
     std::string line, word, temp;
 
     // keep track of current node's adjacency list
@@ -83,8 +82,7 @@ void getGraph(ygm::comm &world, ygm::container::map<std::size_t, adj_list> &mat,
         }
 
 
-        //adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
-        adj.insert({std::stoi(row[1]), std::stof(row[2])});
+        adj.push_back (std::make_tuple(std::stoi(row[1]), std::stof(row[2])));
     }
 
     if (world.rank() == curr_node % world.size()) {
