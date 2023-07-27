@@ -86,49 +86,12 @@ int main(int argc, char **argv) {
         // Providing a seed value
         if (vtx1 != vtx2) {
             edge_map.async_visit(vtx1, [](const auto &head_vtx, auto &edges, auto &tail_vtx, auto &weight) {
-                //std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
-                //edge_set.insert(to_insert);
                 edges.insert({tail_vtx, DUMMY_WEIGHT});
             }, vtx2, max_weight);
         }
         ++edge_gen_iter;
         //world.barrier();
     }
-    world.barrier();
-    world.barrier();
-
-    /*map.for_all([](auto head_vtx, auto edge_set) {
-        for (auto edge : edge_set.edges) {
-            std::cout << head_vtx << "," << std::get<0>(edge) << std::endl;
-        }
-    });/*
-
-    /*map.for_all([&map](auto vtx, auto &vtx_edges) {
-        for (auto& e : vtx_edges.edges) {
-            if (vtx < std::get<0>(e)) {
-                int weight = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
-                //std::get<1>(e) = weight;
-                std::size_t tail_vtx = std::get<0>(e);
-
-                map.async_visit(tail_vtx, [](auto &tail_vtx, auto &tail_vtx_edges, auto &head_vtx, auto &weight) {
-                    //tail_vtx_edges. = weight;
-                    std::tuple<std::size_t, float> to_insert = {head_vtx, weight};
-                    //std::tuple<std::size_t, float> to_remove = {head_vtx, INF};
-                    for (auto& e : tail_vtx_edges.edges) {
-                        if (std::get<0>(e) == head_vtx) {
-                            std::replace(tail_vtx_edges.edges.begin(), tail_vtx_edges.edges.end(), e, to_insert);
-                        }
-                    }
-
-                }, vtx, weight);
-
-
-                std::tuple<std::size_t, float> to_insert = {tail_vtx, weight};
-                std::replace(vtx_edges.edges.begin(), vtx_edges.edges.end(), e, to_insert);
-            }
-        }
-    });*/
-
     world.barrier();
 
     edge_map.for_all([&edge_map](auto vtx, auto &vtx_edges) {
@@ -152,6 +115,7 @@ int main(int argc, char **argv) {
             std::cout << head_vtx << "," << std::get<0>(edge) << "," << std::get<1>(edge) << std::endl;
         }
     });
+
     /*ofstream outfile;
     int local_id = world.rank();
     std::string outfile_name = prefix + "." + std::to_string(local_id) + ".out";
