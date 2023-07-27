@@ -34,7 +34,7 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
 
     uint64_t total_num_edges = uint64_t(1) << (uint64_t(rmat_scale + 4)); /// Number of total edges (avg 16 per vertex)
     uint64_t local_num_edges = total_num_edges / world.size() + (world.rank() < total_num_edges % world.size()); /// Number of edges each rank generates
-    bool undirected = true;
+    bool undirected = false;
     bool scramble = true;
     rmat_edge_generator rmat(world.rank(), rmat_scale, local_num_edges, 0.57, 0.19, 0.19, 0.05, scramble, undirected);
 
@@ -53,7 +53,6 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
     const static int EDGE_WEIGHT_UB= 100;
     const static int DUMMY_WEIGHT = -1;
     srand((unsigned) time(NULL));
-    //srand(7);
 
     // create the graph with dummy value weights that will be updated later
     auto edge_gen_iter = rmat.begin();
@@ -63,37 +62,23 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
         auto vtx1 = std::get<0>(edge);
         auto vtx2 = std::get<1>(edge);
 
-        // Providing a seed value
         if (vtx1 != vtx2) {
-            edge_map.async_visit(vtx1, [](const auto head_vtx, auto &edges, auto tail_vtx, auto weight) {
-                //std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
-                //edge_set.insert(to_insert);
+            edge_map.async_visit(vtx1, [](auto head_vtx, auto &edges, auto tail_vtx, auto weight) {
                 edges.insert({tail_vtx, DUMMY_WEIGHT});
             }, vtx2, max_weight);
-            edge_map.async_visit(vtx2, [](const auto head_vtx, auto &edges, auto tail_vtx, auto weight) {
-                //std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
-                //edge_set.insert(to_insert);
-                edges.insert({tail_vtx, DUMMY_WEIGHT});
-            }, vtx1, max_weight);
         }
         ++edge_gen_iter;
-        world.barrier();
     }
     world.barrier();
 
 
     edge_map.for_all([&edge_map, &max_weight](auto vtx, auto &vtx_edges) {
         for (auto& [key, value] : vtx_edges) {
-            if (vtx < key) {
-                int weight = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
-                if (weight > max_weight) {
-                    max_weight = weight;
-                }
-                value = weight;
-                edge_map.async_visit(key, [](auto tail_vtx, auto &tail_vtx_edges, auto head_vtx, auto weight) {
-                    tail_vtx_edges[head_vtx] = weight;
-                }, vtx, weight);
+            int weight = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
+            if (weight > max_weight) {
+                max_weight = weight;
             }
+            value = weight;
         }
     });
 

@@ -11,6 +11,8 @@
 #include <ygm/container/map.hpp>
 #include "adjacency.h"
 #include "rmat_gen_graphs.h"
+#include <chrono>
+
 
 int main(int argc, char* argv[]) {
     ygm::comm world(&argc, &argv);
@@ -21,11 +23,14 @@ int main(int argc, char* argv[]) {
     std::string path = "/home/molliep/ygm/examples/data/data1.csv";
     float max_weight;
 
+    int rmat_scale = std::atoi(argv[1]);
     // fill the graph
-    if (argc > 1) {
-        path = argv[1];
-    }
-    getGraph(world, map, max_weight, path);
+    /*if (argc > 1) {
+        //path = argv[1];
+    }*/
+    //getGraph(world, map, max_weight, path);
+    generate_rmat_graph(world, map, rmat_scale, max_weight);
+
 
     // fill the successors -> default is -1
     map.for_all([](auto vertex, auto &vertex_info) {
@@ -45,6 +50,10 @@ int main(int argc, char* argv[]) {
     int N = map.size();
     bool unprocessed_updates = false;
     bool global_unprocessed_updates = true;
+
+
+    // start timing
+    auto beg = std::chrono::high_resolution_clock::now();
 
     //for (int i = 0; i < N - 1; ++i) { -->> this is for the standard version (vertices - 1 iterations)
     while (global_unprocessed_updates) {
@@ -75,8 +84,33 @@ int main(int argc, char* argv[]) {
         unprocessed_updates = false;
     }
 
-    // print the results
+    // end timing
+    auto end = std::chrono::high_resolution_clock::now();
+
+    // compute total elapsed time
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
+
+    int time = duration.count();
+
+    auto global_time = world.all_reduce_max(time);
+
+
+    int num_edges = 0;
+
+    map.for_all([&num_edges](auto key, auto &vertex){
+        num_edges += vertex.edges.size();
+    });
+
+    int global_num_edges = world.all_reduce_sum(num_edges);
+
+    if (world.rank() == 0)
+    {
+        std::cout << global_time/1000.0 << std::endl;
+        std::cout << global_num_edges << std::endl;
+    }
+
+    /*// print the results
     map.for_all([](auto vertex, auto &vertex_info) {
         std::cout << "tent(" << vertex << ") = " << vertex_info.tent << std::endl;
-    });
+    });*/
 }

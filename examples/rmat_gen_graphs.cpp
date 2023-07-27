@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
     uint64_t total_num_edges = uint64_t(1) << (uint64_t(rmat_scale + 4)); /// Number of total edges (avg 16 per vertex)
     uint64_t local_num_edges = total_num_edges / world.size() + (world.rank() < total_num_edges % world.size()); /// Number of edges each rank generates
-    bool undirected = true;
+    bool undirected = false;
     bool scramble = true;
     rmat_edge_generator rmat(world.rank(), rmat_scale, local_num_edges, 0.57, 0.19, 0.19, 0.05, scramble, undirected);
 
@@ -56,10 +56,14 @@ int main(int argc, char **argv) {
     ygm::timer preprocess_timer{};
 
     ygm::container::map<std::size_t, std::map<std::size_t, float>> edge_map(world);
+    ygm::container::map<std::size_t, adj_list> map(world);
 
     for (int i = 0; i < pow(2, rmat_scale); ++i) {
         std::map<std::size_t, float>new_map;
         edge_map.async_insert(i, new_map);
+        std::vector<std::tuple<std::size_t, float>> new_vec;
+        adj_list to_insert = {new_vec, INF};
+        map.async_insert(i, to_insert);
     }
 
     const static int EDGE_WEIGHT_LB = 1;
@@ -81,38 +85,56 @@ int main(int argc, char **argv) {
 
         // Providing a seed value
         if (vtx1 != vtx2) {
-            edge_map.async_visit(vtx1, [](const auto head_vtx, auto &edges, auto tail_vtx, auto weight) {
+            edge_map.async_visit(vtx1, [](const auto &head_vtx, auto &edges, auto &tail_vtx, auto &weight) {
                 //std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
                 //edge_set.insert(to_insert);
                 edges.insert({tail_vtx, DUMMY_WEIGHT});
             }, vtx2, max_weight);
-            edge_map.async_visit(vtx2, [](const auto head_vtx, auto &edges, auto tail_vtx, auto weight) {
-                //std::tuple<std::size_t, float> to_insert = std::make_tuple(tail_vtx, DUMMY_WEIGHT);
-                //edge_set.insert(to_insert);
-                edges.insert({tail_vtx, DUMMY_WEIGHT});
-            }, vtx1, max_weight);
         }
         ++edge_gen_iter;
-        world.barrier();
+        //world.barrier();
     }
     world.barrier();
+    world.barrier();
 
-    edge_map.for_all([](auto head_vtx, auto edge_set) {
-        for (auto edge : edge_set) {
+    /*map.for_all([](auto head_vtx, auto edge_set) {
+        for (auto edge : edge_set.edges) {
             std::cout << head_vtx << "," << std::get<0>(edge) << std::endl;
         }
-    });
+    });/*
 
+    /*map.for_all([&map](auto vtx, auto &vtx_edges) {
+        for (auto& e : vtx_edges.edges) {
+            if (vtx < std::get<0>(e)) {
+                int weight = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
+                //std::get<1>(e) = weight;
+                std::size_t tail_vtx = std::get<0>(e);
+
+                map.async_visit(tail_vtx, [](auto &tail_vtx, auto &tail_vtx_edges, auto &head_vtx, auto &weight) {
+                    //tail_vtx_edges. = weight;
+                    std::tuple<std::size_t, float> to_insert = {head_vtx, weight};
+                    //std::tuple<std::size_t, float> to_remove = {head_vtx, INF};
+                    for (auto& e : tail_vtx_edges.edges) {
+                        if (std::get<0>(e) == head_vtx) {
+                            std::replace(tail_vtx_edges.edges.begin(), tail_vtx_edges.edges.end(), e, to_insert);
+                        }
+                    }
+
+                }, vtx, weight);
+
+
+                std::tuple<std::size_t, float> to_insert = {tail_vtx, weight};
+                std::replace(vtx_edges.edges.begin(), vtx_edges.edges.end(), e, to_insert);
+            }
+        }
+    });*/
+
+    world.barrier();
 
     edge_map.for_all([&edge_map](auto vtx, auto &vtx_edges) {
         for (auto& [key, value] : vtx_edges) {
-            if (vtx < key) {
-                int weight = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
-                value = weight;
-                edge_map.async_visit(key, [](auto tail_vtx, auto &tail_vtx_edges, auto head_vtx, auto weight) {
-                    tail_vtx_edges[head_vtx] = weight;
-                }, vtx, weight);
-            }
+            int weight = EDGE_WEIGHT_LB + (rand() % EDGE_WEIGHT_UB);
+            value = weight;
         }
     });
 
