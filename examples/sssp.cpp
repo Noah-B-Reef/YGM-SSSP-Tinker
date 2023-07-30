@@ -35,7 +35,12 @@ int main(int argc, char* argv[]) {
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
         //getGraph(world, map, max_weight, path);
 
+
+        // start timing
+        auto beg = std::chrono::high_resolution_clock::now();
         generate_rmat_graph(world, map, rmat_scale, max_weight);
+        // end timing
+        auto end = std::chrono::high_resolution_clock::now();
 
         int degree = 0;
 
@@ -47,10 +52,34 @@ int main(int argc, char* argv[]) {
             }
         });
 
-        float max_degree = world.all_reduce_max(degree);
-        static float delta = 1.0/max_degree;
-        num_buckets = (size_t)ceil(max_weight/delta) + 1;
+        if (argc == 2)
+        {
+            float max_degree = world.all_reduce_max(degree);
+            static float delta = 1.0/max_degree;
+            num_buckets = (size_t)ceil(max_weight/delta) + 1;
+        }
+        
+        else {
+            num_buckets = std::atoi(argv[2]);
+            static float delta = std::atof(argv[3]);
+        }
+
+    // compute total elapsed time
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - beg);
+
+    int time = duration.count();
+
+    auto global_time = world.all_reduce_max(time);
+
+    
+
+     if (world.rank() == 0)
+    {
+        std::cout << num_buckets << std::endl;
+        std::cout << global_time/1000.0 << std::endl;
     }
+    }
+
     else {
 
         std::string path = "";
@@ -58,7 +87,14 @@ int main(int argc, char* argv[]) {
 
         // here is the lookup map for vertices and their best tent values/adj list (as a struct)
         //getGraph(world, map, max_weight, path);
+
+        // start timing
+        auto beg = std::chrono::high_resolution_clock::now();
+
 	    generate_rmat_graph(world, map, 8, max_weight);
+
+         // end timing
+         auto end = std::chrono::high_resolution_clock::now();
 
         map.for_all([&degree](auto k, auto v)
         {
@@ -74,7 +110,7 @@ int main(int argc, char* argv[]) {
         
         num_buckets = (size_t)ceil(max_weight/delta) + 1;
     }
-    
+
     // add the sets to the vector -------------------------------------------------------------------------------------
     for (int i = 0; i < num_buckets; ++i) {
         buckets.emplace_back(world);

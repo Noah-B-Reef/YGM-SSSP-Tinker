@@ -1,0 +1,6 @@
+1000
+1682.44
+terminate called after throwing an instance of 'std::bad_alloc'
+  what():  std::bad_alloc
+[n119.cluster.local:mpi_rank_29][error_sighandler] Caught error: Aborted (signal 6)
+slurmstepd: error: *** STEP 48725.721 ON n115 CANCELLED AT 2023-07-29T15:59:27 ***

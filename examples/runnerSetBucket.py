@@ -19,11 +19,11 @@ for k in range(5,9):
                     '''
                     print("Scale n = " + str(i))
                     start = time.time()
-                    os.system("srun -N " + str(k) + " --ntasks-per-node=" + str(j) + " -o exp.out ../build/examples/sssp " + str(i))
+                    os.system("srun -N " + str(k) + " --ntasks-per-node=" + str(j) + " -o expS.out ../build/examples/sssp " + str(i) + " " + str(1000) + " " + str(3))
                     end = time.time()
                     print("SSSP Ran in: " + str(end-start))
                     time.sleep(5)
-                    f = open("exp.out", "r")
+                    f = open("expS.out", "r")
 
                     num_buckets = f.readline().strip()
                     rmat_time = f.readline().strip()
@@ -34,4 +34,4 @@ for k in range(5,9):
                     f.close()
                     print("added to dataframe")
                     
-            results.to_csv("SSSP_Directed_Experiments/experiment_" + str(k) + "_" + str(j) + "_free_buck.csv", index=False)
+            results.to_csv("/home/noahr/YGM_SSSP_Tinker/examples/SSSP_Directed_Experiements_Set/experiment_" + str(k) + "_" + str(j) + "_set_buck.csv", index=False)
