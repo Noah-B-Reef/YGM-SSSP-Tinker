@@ -109,8 +109,8 @@ int main(int argc, char* argv[]) {
         std::cout << global_num_edges << std::endl;
     }
 
-    /*// print the results
-    map.for_all([](auto vertex, auto &vertex_info) {
+    // print the results
+    /*map.for_all([](auto vertex, auto &vertex_info) {
         std::cout << "tent(" << vertex << ") = " << vertex_info.tent << std::endl;
     });*/
 }
