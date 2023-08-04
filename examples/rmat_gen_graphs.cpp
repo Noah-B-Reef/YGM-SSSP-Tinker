@@ -61,9 +61,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < pow(2, rmat_scale); ++i) {
         std::map<std::size_t, float>new_map;
         edge_map.async_insert(i, new_map);
-        std::vector<std::tuple<std::size_t, float>> new_vec;
-        adj_list to_insert = {new_vec, INF};
-        map.async_insert(i, to_insert);
     }
 
     const static int EDGE_WEIGHT_LB = 1;
