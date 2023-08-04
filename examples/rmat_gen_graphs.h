@@ -44,10 +44,10 @@ void generate_rmat_graph(ygm::comm &world, ygm::container::map<std::size_t, adj_
 
     ygm::container::map<std::size_t, std::map<std::size_t, float>> edge_map(world);
 
-    for (int i = 0; i < pow(2, rmat_scale); ++i) {
-        std::map<std::size_t, float>new_map;
-        edge_map.async_insert(i, new_map);
-    }
+    //for (int i = 0; i < pow(2, rmat_scale); ++i) {
+      //  std::map<std::size_t, float>new_map;
+      //  edge_map.async_insert(i, new_map);
+   // }
 
     const static int EDGE_WEIGHT_LB = 1;
     const static int EDGE_WEIGHT_UB= 100;

@@ -55,8 +55,8 @@ int main(int argc, char* argv[]) {
     // start timing
     auto beg = std::chrono::high_resolution_clock::now();
 
-    //for (int i = 0; i < N - 1; ++i) { -->> this is for the standard version (vertices - 1 iterations)
-    while (global_unprocessed_updates) {
+    for (int i = 0; i < N - 1; ++i) {// -->> this is for the standard version (vertices - 1 iterations) 
+    //while (global_unprocessed_updates) {
         successors.for_all([&unprocessed_updates](auto vertex, auto &was_visited) {
            if (std::get<1>(was_visited)) {
                unprocessed_updates = true;

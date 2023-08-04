@@ -75,8 +75,8 @@ int main(int argc, char* argv[]) {
 
      if (world.rank() == 0)
     {
-        std::cout << num_buckets << std::endl;
-        std::cout << global_time/1000.0 << std::endl;
+       // std::cout << num_buckets << std::endl;
+       // std::cout << global_time/1000.0 << std::endl;
     }
     }
 
