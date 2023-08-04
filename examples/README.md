@@ -23,7 +23,7 @@
 ### For the Delta Stepping Algorithm
 - to switch from running on an RMAT graph to running on a csv file (that is ordered in acsending order by source node of each edge, comment out line 34 that initializes the rmat scale, uncomment line 33 specifying the path
 - then uncomment line 36 which calls the getGraph function, and recomment line 43, which generates the RMAT graph
-- close out of the file, **cd ../build** then **make**, salloc the desired number of nodes and then **srun examples/delta_|_sssp {path to graph csv}**
+- close out of the file, **cd ../build** then **make**, salloc the desired number of nodes and then **srun examples/delta_\_sssp {path to graph csv}**
 
 ### For the Bellman Ford Algorithm
 - comment out the line 26 which initializes the RMAT scale, and uncomment the line 29, which initializes the path to the csv
