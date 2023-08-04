@@ -26,4 +26,4 @@ for i in range(2, upper_tpn + 1):
     f.close()
     print("added to dataframe")
 
-results.to_csv("weak_scaling/ws_N" + str(COMPUTE_NODES) + "_" + sys.argv[1] + ".csv", index=False)
+results.to_csv("strong_scaling/ws_N" + str(COMPUTE_NODES) + "_" + sys.argv[1] + ".csv", index=False)
